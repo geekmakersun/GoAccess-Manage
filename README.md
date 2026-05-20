@@ -64,17 +64,53 @@ sudo ./部署配置.sh
 
 ```bash
 cd /www/wwwroot/goaccess-管理
-sudo ./分析所有站点.sh
+# 推荐以 www 用户运行（与网站运行身份一致，避免权限问题）
+su - www -s /bin/bash -c 'cd /www/wwwroot/goaccess-管理 && ./分析所有站点.sh'
+
+# 也可以使用 sudo -u www（如果系统支持）
+# sudo -u www ./分析所有站点.sh
 ```
 
 ### 5. 设置定时任务（宝塔面板）
 
 ```bash
-# 每天凌晨 2 点自动分析所有站点
-0 2 * * * cd /www/wwwroot/goaccess-管理 && ./分析所有站点.sh
+# 每天凌晨 2 点自动分析所有站点（以 www 用户运行）
+0 2 * * * su - www -s /bin/bash -c 'cd /www/wwwroot/goaccess-管理 && ./分析所有站点.sh'
 
-# 每月 1 号自动更新 GeoIP 数据库
+# 每月 1 号自动更新 GeoIP 数据库（需要 root）
 0 0 1 * * cd /www/wwwroot/goaccess-管理 && sudo ./更新GeoLite2.sh
+```
+
+## ⚠️ 重要：用户权限说明
+
+本系统涉及两种运行模式，请注意区分：
+
+| 脚本 | 需要权限 | 推荐运行用户 | 原因 |
+|------|---------|------------|------|
+| 安装GoAccess.sh | **必须 root** | root | 编译安装需要系统目录写入权限 |
+| 部署配置.sh | **必须 root** | root | 需要写入 /www/wwwroot/运行配置 |
+| 更新GeoLite2.sh | **必须 root** | root | 需要更新 /usr/share/GeoIP 系统目录 |
+| 分析所有站点.sh | **普通用户** | www | 生成的文件需要被网站用户访问 |
+
+### 为什么分析脚本要用 www 用户运行？
+
+1. **权限一致**：网站以 www 用户运行，生成的报告文件权限需要匹配
+2. **日志访问**：日志文件归属 www 用户，其他用户可能无法读取
+3. **避免权限问题**：以 root 运行会导致生成的文件被 root 独占，www 用户无法写入数据库
+
+### 权限问题排查
+
+如果遇到权限错误，请检查：
+
+```bash
+# 检查日志文件权限
+ls -la /www/wwwlogs/您的域名.log
+
+# 检查输出目录权限
+ls -la /www/wwwroot/您的域名/
+
+# 检查数据库目录权限
+ls -la /www/wwwroot/goaccess-db/
 ```
 
 ## 📖 详细文档
@@ -143,4 +179,4 @@ keep-db=true
 
 ---
 
-**最后更新：2026-05-20**
+**最后更新：2026-05-20 (v2.1)**

@@ -205,6 +205,18 @@ echo ""
 # --------------------------------------------------------------------------------
 log_section "1/5" "检查环境"
 
+# 检查运行用户（建议使用 www 用户运行，以匹配网站运行身份）
+# 说明：以 www 用户运行可确保生成的文件权限正确，避免网站无法访问报告
+if [ "$EUID" -eq 0 ]; then
+    log_warning "=========================================="
+    log_warning "警告：建议使用 www 用户运行此脚本"
+    log_warning "以 root 运行可能导致文件权限问题"
+    log_warning "=========================================="
+    log_info "推荐运行方式："
+    echo "  su - www -s /bin/bash -c '$SCRIPT_DIR/分析所有站点.sh'"
+    echo ""
+fi
+
 # 检查 GoAccess 命令是否存在
 if ! command -v goaccess &> /dev/null; then
     log_error "GoAccess 未安装"
@@ -220,10 +232,17 @@ if [ ! -d "$CONFIG_DIR" ]; then
 fi
 log_success "配置目录正常: $CONFIG_DIR"
 
+# 检查配置目录是否可读
+if [ ! -r "$CONFIG_DIR" ]; then
+    log_error "配置目录不可读: $CONFIG_DIR"
+    exit 1
+fi
+
 # 确保数据目录存在
 if [ ! -d "$DB_DIR" ]; then
     log_info "创建数据目录: $DB_DIR"
     mkdir -p "$DB_DIR"
+    chmod 777 "$DB_DIR" 2>/dev/null || true
 fi
 echo ""
 
@@ -303,17 +322,43 @@ for CONFIG_FILE in "$CONFIG_DIR"/*.conf; do
         continue
     fi
 
-    # 确保 HTML 报告的输出目录存在
+    # 检查日志文件是否可读
+    if [ ! -r "$log-file" ]; then
+        log_warning "日志文件不可读: $log-file"
+        log_info "请检查文件权限，或确保以 www 用户运行此脚本"
+        SKIP_COUNT=$((SKIP_COUNT + 1))
+        continue
+    fi
+
+    # 确保 HTML 报告的输出目录存在（使用 777 权限确保 www 用户可写）
     OUTPUT_DIR=$(dirname "$output-html")
     if [ ! -d "$OUTPUT_DIR" ]; then
         log_info "创建输出目录: $OUTPUT_DIR"
         mkdir -p "$OUTPUT_DIR"
+        chmod 777 "$OUTPUT_DIR" 2>/dev/null || true
     fi
 
-    # 确保数据库的父目录存在
+    # 检查输出目录是否可写
+    if [ ! -w "$OUTPUT_DIR" ]; then
+        log_warning "输出目录不可写: $OUTPUT_DIR"
+        log_info "请检查目录权限：chmod 777 $OUTPUT_DIR"
+        SKIP_COUNT=$((SKIP_COUNT + 1))
+        continue
+    fi
+
+    # 确保数据库的父目录存在（使用 777 权限确保 www 用户可写）
     DB_PARENT=$(dirname "$db-path")
     if [ ! -d "$DB_PARENT" ]; then
         mkdir -p "$DB_PARENT"
+        chmod 777 "$DB_PARENT" 2>/dev/null || true
+    fi
+
+    # 检查数据库目录是否可写
+    if [ ! -w "$DB_PARENT" ]; then
+        log_warning "数据库目录不可写: $DB_PARENT"
+        log_info "请检查目录权限：chmod 777 $DB_PARENT"
+        SKIP_COUNT=$((SKIP_COUNT + 1))
+        continue
     fi
 
     # 设置默认值（如果配置文件中没有指定）
