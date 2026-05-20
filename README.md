@@ -26,11 +26,12 @@ goaccess-管理/               # 🎯 管理目录（所有管理文件在这里
 ├── CHANGELOG.md            # 📝 更新日志
 ├── .gitignore              # Git 忽略规则
 ├── .gitattributes          # Git 属性配置
-└── 站点配置/               # 📝 配置文件目录
-    └── 配置模板.conf       # 配置模板
+├── 模板/                   # 📋 配置模板目录（存放模板文件）
+│   └── 配置模板.conf       # 配置模板
+└── 站点配置/               # 📝 工作目录（用户创建的配置文件）
 
 /www/wwwroot/
-├── 运行配置/               # ⚙️ 运行目录（生效的配置）
+├── 运行配置/               # ⚙️ 运行目录（生效的配置，由部署脚本同步）
 ├── goaccess-db/          # 💾 数据目录（持久化数据）
 └── 您的网站/              # 🌐 各站点目录
     └── site-log.html      # 📊 访问报告
@@ -45,15 +46,19 @@ cd /www/wwwroot/goaccess-管理
 sudo ./安装GoAccess.sh
 ```
 
-### 2. 创建站点配置
+### 2. 创建站点配置（工作目录）
+
+在 **工作目录** 中创建配置文件：
 
 ```bash
 cd /www/wwwroot/goaccess-管理/站点配置
-cp 配置模板.conf 我的网站.conf
+cp ../模板/配置模板.conf 我的网站.conf
 nano 我的网站.conf
 ```
 
-### 3. 部署配置
+### 3. 部署配置（同步到运行目录）
+
+将配置从工作目录部署到 **运行目录**（`/www/wwwroot/运行配置`）：
 
 ```bash
 cd /www/wwwroot/goaccess-管理
