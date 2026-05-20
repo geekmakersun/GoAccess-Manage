@@ -748,10 +748,18 @@ cleanup_cron() {
 cleanup_logs() {
     print_title "清理日志和历史数据库"
     
+    local db_count=$(find /www/wwwroot -name '*.db' -path '*历史数据*' 2>/dev/null | wc -l)
+    local html_count=$(find /www/wwwroot -name '*-log.html' 2>/dev/null | wc -l)
+    
+    echo ""
+    echo "  发现 $db_count 个历史数据库文件"
+    echo "  发现 $html_count 个 HTML 报告文件"
+    echo ""
+    
     if [ "$CLEANUP_LOGS" = true ]; then
+        # 自动清理模式
         log_info "正在清理日志文件..."
         
-        local db_count=$(find /www/wwwroot -name '*.db' -path '*历史数据*' 2>/dev/null | wc -l)
         if [ "$db_count" -gt 0 ]; then
             find /www/wwwroot -name '*.db' -path '*历史数据*' -delete
             log_removed "已清理 $db_count 个历史数据库文件"
@@ -759,7 +767,6 @@ cleanup_logs() {
             log_info "未找到历史数据库文件"
         fi
         
-        local html_count=$(find /www/wwwroot -name '*-log.html' 2>/dev/null | wc -l)
         if [ "$html_count" -gt 0 ]; then
             find /www/wwwroot -name '*-log.html' -delete
             log_removed "已清理 $html_count 个 HTML 报告文件"
@@ -769,16 +776,50 @@ cleanup_logs() {
         
         log_success "日志和历史数据库清理完成"
     else
-        log_info "跳过日志清理（使用 -L 选项可自动清理）"
+        # 交互选择模式
+        local choice
+        echo "  1. 清理所有 .db 历史数据库"
+        echo "  2. 清理所有 HTML 报告"
+        echo "  3. 清理所有日志文件（1+2）"
+        echo "  4. 跳过清理"
+        echo ""
+        read -p "  请选择清理选项 [1-4]: " choice
         
-        echo -e "${CYAN}如果需要清理日志文件，请运行：${NC}"
-        echo ""
-        echo "  # 清理所有 .db 历史数据库"
-        echo "  find /www/wwwroot -name '*.db' -path '*历史数据*' -delete"
-        echo ""
-        echo "  # 清理所有 HTML 报告"
-        echo "  find /www/wwwroot -name '*-log.html' -delete"
-        echo ""
+        case "$choice" in
+            1)
+                if [ "$db_count" -gt 0 ]; then
+                    find /www/wwwroot -name '*.db' -path '*历史数据*' -delete
+                    log_success "已清理 $db_count 个历史数据库文件"
+                else
+                    log_info "未找到历史数据库文件"
+                fi
+                ;;
+            2)
+                if [ "$html_count" -gt 0 ]; then
+                    find /www/wwwroot -name '*-log.html' -delete
+                    log_success "已清理 $html_count 个 HTML 报告文件"
+                else
+                    log_info "未找到 HTML 报告文件"
+                fi
+                ;;
+            3)
+                if [ "$db_count" -gt 0 ]; then
+                    find /www/wwwroot -name '*.db' -path '*历史数据*' -delete
+                    log_removed "已清理 $db_count 个历史数据库文件"
+                fi
+                if [ "$html_count" -gt 0 ]; then
+                    find /www/wwwroot -name '*-log.html' -delete
+                    log_removed "已清理 $html_count 个 HTML 报告文件"
+                fi
+                log_success "所有日志文件清理完成"
+                ;;
+            4)
+                log_info "跳过日志清理"
+                ;;
+            *)
+                log_error "无效选项"
+                ;;
+        esac
     fi
     
     echo ""
@@ -790,43 +831,53 @@ cleanup_logs() {
 cleanup_deps() {
     print_title "卸载编译依赖"
     
-    if [ "$REMOVE_DEPS" = true ]; then
-        log_info "正在卸载编译依赖..."
+    if check_command gcc || check_command make || check_command wget; then
+        log_info "检测到以下编译工具:"
+        check_command gcc && echo "  - gcc"
+        check_command make && echo "  - make"
+        check_command wget && echo "  - wget"
+        echo ""
         
+        local system_type=""
+        local pkg_cmd=""
         if check_command apt-get; then
-            log_info "检测到 Debian/Ubuntu 系统"
-            sudo apt-get remove --purge -y gcc make wget
-            log_success "编译依赖已卸载"
-        elif check_command yum; then
-            log_info "检测到 CentOS/Rocky/AlmaLinux 系统"
-            sudo yum remove -y gcc make wget
-            log_success "编译依赖已卸载"
+            system_type="Debian/Ubuntu"
+            pkg_cmd="sudo apt-get remove --purge gcc make wget"
         elif check_command dnf; then
-            log_info "检测到 Fedora 系统"
-            sudo dnf remove -y gcc make wget
-            log_success "编译依赖已卸载"
+            system_type="Fedora"
+            pkg_cmd="sudo dnf remove gcc make wget"
+        elif check_command yum; then
+            system_type="CentOS/Rocky/AlmaLinux"
+            pkg_cmd="sudo yum remove gcc make wget"
+        fi
+        
+        if [ -n "$system_type" ]; then
+            echo "  系统类型: $system_type"
+            echo "  卸载命令: $pkg_cmd"
+            echo ""
+            
+            if [ "$REMOVE_DEPS" = true ]; then
+                log_info "自动卸载编译依赖..."
+                sudo $pkg_cmd -y
+                log_success "编译依赖已卸载"
+            else
+                local choice
+                echo "  是否卸载编译依赖 (gcc make wget)?"
+                echo ""
+                read -p "  确认卸载? [y/N]: " choice
+                if [[ "$choice" =~ ^[Yy]$ ]]; then
+                    log_info "正在卸载编译依赖..."
+                    sudo $pkg_cmd -y
+                    log_success "编译依赖已卸载"
+                else
+                    log_info "跳过编译依赖卸载"
+                fi
+            fi
         else
             log_error "无法识别包管理器，跳过依赖卸载"
-            echo -e "${CYAN}如果需要完全卸载编译依赖，请运行：${NC}"
-            echo ""
-            echo "  # Debian/Ubuntu"
-            echo "  sudo apt-get remove --purge gcc make wget"
-            echo ""
-            echo "  # CentOS/Rocky/AlmaLinux"
-            echo "  sudo yum remove gcc make wget"
-            echo ""
         fi
     else
-        log_info "跳过编译依赖卸载（使用 -D 选项可自动卸载）"
-        
-        echo -e "${CYAN}如果需要完全卸载编译依赖，请运行：${NC}"
-        echo ""
-        echo "  # Debian/Ubuntu"
-        echo "  sudo apt-get remove --purge gcc make wget"
-        echo ""
-        echo "  # CentOS/Rocky/AlmaLinux"
-        echo "  sudo yum remove gcc make wget"
-        echo ""
+        log_info "未检测到 gcc、make、wget，跳过编译依赖卸载"
     fi
     
     echo ""
