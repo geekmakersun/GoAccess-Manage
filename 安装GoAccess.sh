@@ -677,7 +677,34 @@ fi
 echo ""
 
 # --------------------------------------------------------------------------------
-# 阶段 14：完成提示
+# 阶段 14：创建站点配置目录
+# --------------------------------------------------------------------------------
+print_title "创建站点配置目录"
+
+readonly SITES_CONFIG_DIR="${SCRIPT_DIR}/站点配置"
+
+log_info "创建站点配置目录..."
+mkdir -p "$SITES_CONFIG_DIR"
+
+readonly TEMPLATE_FILE="${SCRIPT_DIR}/模板/配置模板.conf"
+readonly DEST_CONFIG_FILE="${SITES_CONFIG_DIR}/配置模板.conf"
+
+if [ -f "$TEMPLATE_FILE" ]; then
+    if [ ! -f "$DEST_CONFIG_FILE" ]; then
+        cp "$TEMPLATE_FILE" "$DEST_CONFIG_FILE"
+        log_success "配置模板已复制到站点配置目录"
+    else
+        log_info "配置模板已存在，跳过复制"
+    fi
+else
+    log_warning "配置模板文件不存在: $TEMPLATE_FILE"
+fi
+
+log_success "站点配置目录创建完成: $SITES_CONFIG_DIR"
+echo ""
+
+# --------------------------------------------------------------------------------
+# 阶段 15：完成提示
 # --------------------------------------------------------------------------------
 print_title "安装完成！"
 
