@@ -696,8 +696,38 @@ if [ -f "$TEMPLATE_FILE" ]; then
     else
         log_info "配置模板已存在，跳过复制"
     fi
+    
+    # 检查是否有默认站点配置，如果没有则创建一个示例
+    readonly EXAMPLE_CONFIG="${SITES_CONFIG_DIR}/示例站点.conf"
+    if [ ! -f "$EXAMPLE_CONFIG" ]; then
+        # 复制模板并创建示例配置
+        cp "$TEMPLATE_FILE" "$EXAMPLE_CONFIG"
+        # 修改示例配置中的占位符
+        sed -i 's/您的站点名称/示例站点/g' "$EXAMPLE_CONFIG"
+        sed -i 's/您的域名/example.com/g' "$EXAMPLE_CONFIG"
+        log_success "已创建示例站点配置: $EXAMPLE_CONFIG"
+    else
+        log_info "示例站点配置已存在，跳过创建"
+    fi
 else
     log_warning "配置模板文件不存在: $TEMPLATE_FILE"
+    # 如果模板不存在，创建一个简单的默认配置
+    readonly DEFAULT_CONFIG="${SITES_CONFIG_DIR}/默认站点.conf"
+    if [ ! -f "$DEFAULT_CONFIG" ]; then
+        cat > "$DEFAULT_CONFIG" << EOF
+# GoAccess 站点配置文件
+# 请根据实际情况修改以下配置
+
+site-name="默认站点"
+log-file="/www/wwwlogs/your-domain.log"
+db-path="/www/wwwroot/历史数据/默认站点.db"
+output-html="/www/wwwroot/your-domain/site-log.html"
+log-format=COMBINED
+EOF
+        log_success "已创建默认站点配置: $DEFAULT_CONFIG"
+    else
+        log_info "默认站点配置已存在，跳过创建"
+    fi
 fi
 
 log_success "站点配置目录创建完成: $SITES_CONFIG_DIR"
