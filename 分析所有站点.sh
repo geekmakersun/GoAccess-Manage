@@ -265,7 +265,7 @@ if [ ${#CONFIG_FILES[@]} -eq 0 ] || [ ! -f "${CONFIG_FILES[0]}" ]; then
     echo ""
     echo -e "${CYAN}提示：${NC}"
     echo "1. 请在 $CONFIG_DIR 目录下创建站点配置文件"
-    echo "2. 可以复制 模板/配置模板.conf 到 站点配置/ 目录进行修改"
+    echo "2. 可以复制 配置模板.conf 到 站点配置/ 目录进行修改"
     echo "3. 然后运行 部署配置.sh 部署配置"
     exit 0
 fi

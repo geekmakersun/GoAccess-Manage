@@ -46,13 +46,22 @@ cd /www/wwwroot/goaccess-管理
 sudo ./安装GoAccess.sh
 ```
 
+#### 版本检查功能
+- 脚本会自动检查系统中已安装的 GoAccess 版本
+- 如果已安装最新版本，会自动跳过安装过程
+- 如果已安装更高版本，会提示用户确认是否继续安装旧版本
+- 支持 `--force` 参数强制重新安装：
+```bash
+sudo ./安装GoAccess.sh --force
+```
+
 ### 2. 创建站点配置（工作目录）
 
 在 **工作目录** 中创建配置文件：
 
 ```bash
 cd /www/wwwroot/goaccess-管理/站点配置
-cp ../模板/配置模板.conf 我的网站.conf
+cp ../配置模板.conf 我的网站.conf
 nano 我的网站.conf
 ```
 

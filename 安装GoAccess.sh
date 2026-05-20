@@ -93,6 +93,94 @@ trap cleanup EXIT INT TERM
 # ================================================================================
 
 # --------------------------------------------------------------------------------
+# get_installed_version: 获取已安装的 GoAccess 版本
+# 返回：版本字符串（如 "1.10.2"），如果未安装则返回空
+# --------------------------------------------------------------------------------
+get_installed_version() {
+    if check_command goaccess; then
+        local version_output=$(goaccess --version 2>&1)
+        # 从输出中提取版本号（匹配 "1.10.2" 格式）
+        local installed_version=$(echo "$version_output" | grep -oE '([0-9]+\.){2}[0-9]+' | head -1)
+        echo "$installed_version"
+    fi
+}
+
+# --------------------------------------------------------------------------------
+# version_compare: 比较两个版本号
+# 参数：$1 - 当前版本, $2 - 目标版本
+# 返回：
+#   0 - 版本相同
+#   1 - 当前版本 > 目标版本
+#  -1 - 当前版本 < 目标版本
+# --------------------------------------------------------------------------------
+version_compare() {
+    local current=$1
+    local target=$2
+    
+    # 如果任一版本为空，直接返回-1（视为需要安装）
+    if [ -z "$current" ] || [ -z "$target" ]; then
+        return -1
+    fi
+    
+    # 将版本号拆分为数组
+    IFS='.' read -r -a current_parts <<< "$current"
+    IFS='.' read -r -a target_parts <<< "$target"
+    
+    # 比较每个部分
+    for i in "${!current_parts[@]}"; do
+        local current_num=${current_parts[$i]:-0}
+        local target_num=${target_parts[$i]:-0}
+        
+        if [ "$current_num" -gt "$target_num" ]; then
+            return 1
+        elif [ "$current_num" -lt "$target_num" ]; then
+            return -1
+        fi
+    done
+    
+    # 如果当前版本比目标版本短，但前面部分都相同，则视为当前版本更旧
+    if [ "${#current_parts[@]}" -lt "${#target_parts[@]}" ]; then
+        return -1
+    fi
+    
+    # 版本相同
+    return 0
+}
+
+# --------------------------------------------------------------------------------
+# check_update_needed: 检查是否需要更新
+# 返回：
+#   0 - 需要安装/更新
+#   1 - 已安装最新版本
+#   2 - 已安装更高版本
+# --------------------------------------------------------------------------------
+check_update_needed() {
+    local installed_version=$(get_installed_version)
+    
+    if [ -z "$installed_version" ]; then
+        log_info "未检测到已安装的 GoAccess"
+        return 0
+    fi
+    
+    log_info "已安装版本: $installed_version"
+    log_info "目标版本: $GOACCESS_VERSION"
+    
+    version_compare "$installed_version" "$GOACCESS_VERSION"
+    local compare_result=$?
+    
+    if [ "$compare_result" -eq 0 ]; then
+        log_success "已安装最新版本 ($GOACCESS_VERSION)"
+        return 1
+    elif [ "$compare_result" -eq 1 ]; then
+        log_warning "已安装更高版本 ($installed_version)，高于目标版本 ($GOACCESS_VERSION)"
+        return 2
+    else
+        log_info "需要更新: 当前版本 $installed_version -> 目标版本 $GOACCESS_VERSION"
+        return 0
+    fi
+}
+
+# --------------------------------------------------------------------------------
 # print_separator: 打印蓝色分隔线
 # 用途：美化输出，区分不同的操作阶段
 # --------------------------------------------------------------------------------
@@ -496,6 +584,57 @@ install_deps() {
 print_title "GoAccess 编译安装脚本 v2.0"
 
 # --------------------------------------------------------------------------------
+# 阶段 0：版本检查（新增）
+# --------------------------------------------------------------------------------
+print_title "版本检查"
+
+# 检查是否有 --force 参数
+local force_install=false
+if [ "$1" = "--force" ]; then
+    force_install=true
+    log_warning "强制安装模式：将忽略版本检查，重新安装"
+    echo ""
+fi
+
+# 如果不是强制安装，才进行版本检查
+if [ "$force_install" = false ]; then
+    check_update_needed
+    local update_needed=$?
+    
+    # 根据检查结果决定后续操作
+    case "$update_needed" in
+        1)
+            log_success "系统已安装最新版本，无需重复安装"
+            echo ""
+            echo -e "${GREEN}如果需要重新安装，请添加 --force 参数：${NC}"
+            echo "  sudo $0 --force"
+            echo ""
+            exit 0
+            ;;
+        2)
+            log_warning "系统已安装更高版本，是否继续安装旧版本？"
+            echo -n "继续安装请输入 'yes'，否则按任意键退出："
+            read -r confirm
+            if [ "$confirm" != "yes" ]; then
+                log_info "用户取消安装"
+                exit 0
+            fi
+            log_info "继续安装旧版本..."
+            echo ""
+            ;;
+        *)
+            log_info "开始安装/更新流程..."
+            echo ""
+            ;;
+    esac
+else
+    log_info "开始强制安装..."
+    echo ""
+fi
+
+
+
+# --------------------------------------------------------------------------------
 # 阶段 1：检查运行权限
 # --------------------------------------------------------------------------------
 log_info "检查运行权限..."
@@ -686,7 +825,7 @@ readonly SITES_CONFIG_DIR="${SCRIPT_DIR}/站点配置"
 log_info "创建站点配置目录..."
 mkdir -p "$SITES_CONFIG_DIR"
 
-readonly TEMPLATE_FILE="${SCRIPT_DIR}/模板/配置模板.conf"
+readonly TEMPLATE_FILE="${SCRIPT_DIR}/配置模板.conf"
 readonly DEST_CONFIG_FILE="${SITES_CONFIG_DIR}/配置模板.conf"
 
 if [ -f "$TEMPLATE_FILE" ]; then

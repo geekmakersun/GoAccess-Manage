@@ -309,7 +309,7 @@ if [ "$CONFIG_COUNT" -eq 0 ]; then
     echo -e "${CYAN}提示：${NC}"
     echo "请先复制配置模板并编辑："
     echo "  cd $CONFIG_SOURCE"
-    echo "  cp ../模板/配置模板.conf 我的网站.conf"
+    echo "  cp ../配置模板.conf 我的网站.conf"
     echo "  nano 我的网站.conf"
     exit 0
 fi
