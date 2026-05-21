@@ -22,7 +22,7 @@ readonly SCRIPT_NAME="$(basename "$0")"
 readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 readonly GOACCESS_VERSION="1.10.2"
 readonly WORK_DIR="/tmp/goaccess-build"
-readonly GEOIP_DIR="/usr/share/GeoIP"
+readonly GEOIP_DIR="${SCRIPT_DIR}/GeoIP"
 readonly GEOIP_CITY_DB="${GEOIP_DIR}/GeoLite2-City.mmdb"
 readonly GEOIP_ASN_DB="${GEOIP_DIR}/GeoLite2-ASN.mmdb"
 readonly SITES_CONFIG_DIR="${SCRIPT_DIR}/站点配置"
@@ -119,9 +119,9 @@ show_usage() {
     echo "用法: $SCRIPT_NAME [选项]"
     echo ""
     echo "选项:"
-    echo "  -a, --all          移除所有文件（包括配置和数据库）"
+    echo "  -a, --all          移除所有文件（包括配置和GoAccess配置）"
     echo "  -c, --config       移除站点配置文件"
-    echo "  -d, --database     移除 GeoIP 数据库"
+    echo "  -d, --database     移除 GoAccess 配置文件"
     echo "  -C, --cron         自动清理定时任务"
     echo "  -L, --logs         自动清理日志和GoAccess数据库"
     echo "  -D, --deps         自动卸载编译依赖（gcc make wget）"
@@ -213,7 +213,7 @@ run_uninstall() {
     remove_doc_files
     update_system_cache
     remove_config_files
-    remove_geoip_database
+    remove_goaccess_config
     cleanup_residual
     
     verify_uninstall
@@ -300,8 +300,8 @@ confirm_uninstall() {
     fi
     
     if [ "$REMOVE_DB" = true ]; then
-        echo "5. 移除 GeoIP 数据库"
-        echo "   - 目录: $GEOIP_DIR"
+        echo "5. 移除 GoAccess 配置文件"
+        echo "   - 目录: $GOACCESS_CONFIG_DIR"
     fi
     
     echo ""
@@ -589,53 +589,14 @@ remove_config_files() {
 }
 
 # ================================================================================
-# 阶段 9：移除 GeoIP 数据库
+# 阶段 9：移除 GoAccess 配置文件
 # ================================================================================
-remove_geoip_database() {
-    print_title "阶段 9：移除 GeoIP 数据库"
+remove_goaccess_config() {
+    print_title "阶段 9：移除 GoAccess 配置文件"
     
     if [ "$REMOVE_DB" = true ]; then
-        log_info "正在移除 GeoIP 数据库..."
+        log_info "正在移除 GoAccess 配置文件..."
         
-        local db_count=0
-        
-        if [ -f "$GEOIP_CITY_DB" ]; then
-            rm -f "$GEOIP_CITY_DB"
-            log_removed "已移除: $GEOIP_CITY_DB"
-            db_count=$((db_count + 1))
-        fi
-        
-        if [ -f "$GEOIP_ASN_DB" ]; then
-            rm -f "$GEOIP_ASN_DB"
-            log_removed "已移除: $GEOIP_ASN_DB"
-            db_count=$((db_count + 1))
-        fi
-        
-        if [ -d "$GEOIP_DIR" ]; then
-            local remaining_files=$(find "$GEOIP_DIR" -type f 2>/dev/null | wc -l)
-            if [ "$remaining_files" -eq 0 ]; then
-                rm -rf "$GEOIP_DIR"
-                log_removed "已移除空目录: $GEOIP_DIR"
-            else
-                log_info "GeoIP 目录中还有其他文件，保留目录"
-                log_info "剩余文件: $remaining_files 个"
-            fi
-        fi
-        
-        if [ "$db_count" -gt 0 ]; then
-            log_success "已清理 $db_count 个 GeoIP 数据库文件"
-        else
-            log_info "未找到 GeoIP 数据库文件"
-        fi
-        
-        log_info "清理用户目录下的数据库..."
-        local home_db="${HOME}/.config/goaccess/GeoLite2-City.mmdb"
-        if [ -f "$home_db" ]; then
-            rm -f "$home_db"
-            log_removed "已移除: $home_db"
-        fi
-        
-        log_info "清理 GoAccess 配置文件..."
         if [ -d "$GOACCESS_CONFIG_DIR" ]; then
             if [ -f "${GOACCESS_CONFIG_DIR}/goaccess.conf" ]; then
                 rm -f "${GOACCESS_CONFIG_DIR}/goaccess.conf"
@@ -649,9 +610,18 @@ remove_geoip_database() {
             else
                 log_info "配置目录中还有其他文件，保留目录"
             fi
+        else
+            log_info "GoAccess 配置目录不存在，跳过"
+        fi
+        
+        log_info "清理用户目录下的配置..."
+        local home_db="${HOME}/.config/goaccess/GeoLite2-City.mmdb"
+        if [ -f "$home_db" ]; then
+            rm -f "$home_db"
+            log_removed "已移除: $home_db"
         fi
     else
-        log_info "跳过 GeoIP 数据库移除（使用 -d 或 --all 选项可移除）"
+        log_info "跳过 GoAccess 配置文件移除（使用 -d 或 --all 选项可移除）"
     fi
     
     echo ""
@@ -717,11 +687,6 @@ verify_uninstall() {
         verify_passed=false
     else
         log_success "编译目录已清理"
-    fi
-    
-    if [ "$REMOVE_DB" = true ] && [ -d "$GEOIP_DIR" ]; then
-        log_warning "GeoIP 目录未完全清理: $GEOIP_DIR"
-        verify_passed=false
     fi
     
     if [ "$REMOVE_CONFIG" = true ] && [ -d "$SITES_CONFIG_DIR" ]; then
@@ -953,7 +918,7 @@ main() {
     remove_doc_files
     update_system_cache
     remove_config_files
-    remove_geoip_database
+    remove_goaccess_config
     cleanup_residual
     
     cleanup_cron

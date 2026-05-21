@@ -27,6 +27,78 @@
 
 ---
 
+## [v2.9.5] - 2026-05-21 14:39 🎉 ✨ 📁
+
+<details>
+<summary>展开查看详情</summary>
+
+### 🎉 重大更新
+
+#### 📁 GeoIP 数据库管理重构
+- **📂 目录结构调整**：创建独立的 `GeoIP/` 目录，专门存放 GeoIP 数据库文件
+- **🔄 路径迁移**：从系统路径 `/usr/share/GeoIP` 迁移到项目目录 `GeoIP/`
+- **🎯 数据持久化**：数据库文件保存在项目中，卸载时不会丢失
+- **🛡️ 防误删机制**：卸载脚本不再清理 GeoIP 数据库文件
+
+### ✨ 新增功能
+
+#### 📜 GeoIP 更新脚本增强 (GeoIP/更新GeoLite2.sh)
+- **📊 版本号持久化**：创建 `GeoIP.version` 文件记录数据库版本信息
+  - 记录数据库版本、日期、大小、更新时间
+  - 自动更新，无需手动维护
+- **🔍 智能版本检测**：自动检测数据库年龄，超过 30 天才更新
+- **🌐 多镜像源支持**：GitHub、jsDelivr CDN、Fastly CDN 三个镜像源
+- **🛠️ 命令行参数**：支持 `-c`、`-a`、`-f`、`-v`、`-C` 等参数
+- **🔄 自动备份清理**：自动清理超过 7 天的备份文件
+- **💻 Windows 兼容性**：支持 Windows Git Bash 环境
+  - 自动添加 Git Bash 工具路径
+  - 兼容 Windows 文件系统
+
+#### 📝 文档完善
+- **📖 GeoIP/README.md**：GeoIP 数据库详细说明文档
+- **📖 GeoIP/使用说明.md**：更新脚本使用指南
+- **📖 GeoIP/GeoIP.version**：版本信息文件
+
+### 🔧 功能优化
+
+#### 📜 安装脚本优化 (安装GoAccess.sh)
+- **📂 GeoIP 路径调整**：从系统路径改为项目目录 `GeoIP/`
+- **🚫 移除自动下载**：不再自动下载 GeoIP 数据库，改为手动管理
+- **⚙️ 保留配置功能**：仍然自动创建 GoAccess 配置文件并指定数据库路径
+
+#### 🗑️ 卸载脚本优化 (卸载GoAccess.sh)
+- **🛡️ 不清理 GeoIP**：不再清理 GeoIP 数据库文件，避免误删
+- **🧹 只清理配置**：只清理 GoAccess 配置文件，保留数据库文件
+- **📝 更新提示信息**：更新使用说明和确认提示
+
+### 📁 文件结构变更
+
+#### 新增文件
+- `GeoIP/GeoLite2-City.mmdb` - GeoLite2-City 数据库文件 (62 MB)
+- `GeoIP/GeoLite2-ASN.mmdb` - GeoLite2-ASN 数据库文件 (11 MB)
+- `GeoIP/GeoIP.version` - 版本信息文件
+- `GeoIP/README.md` - GeoIP 数据库说明
+- `GeoIP/使用说明.md` - 更新脚本使用指南
+- `GeoIP/更新GeoLite2.sh` - 数据库更新脚本
+
+#### 删除文件
+- `更新GeoLite2.sh` - 旧的更新脚本（已迁移到 GeoIP 目录）
+
+### 💡 使用建议
+
+#### GeoIP 数据库管理
+1. **首次使用**：在 Linux 服务器上运行 `GeoIP/更新GeoLite2.sh`
+2. **手动下载**：从 MaxMind 官网下载或使用 `geoipupdate` 工具
+3. **定时更新**：在宝塔面板设置定时任务，每周二自动更新
+
+#### Windows 用户
+- 使用 Git Bash 运行更新脚本
+- 或在 Linux 服务器上运行（推荐）
+
+</details>
+
+---
+
 ## [v2.9.4] - 2026-05-21 09:48 🔧 🐛
 
 <details>
