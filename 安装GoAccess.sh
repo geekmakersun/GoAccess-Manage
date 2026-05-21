@@ -940,8 +940,6 @@ echo ""
 # --------------------------------------------------------------------------------
 print_title "配置 GeoIP 数据库"
 
-mkdir -p "$GEOIP_DIR"
-
 create_goaccess_config() {
     local config_file="/usr/local/etc/goaccess.conf"
     
@@ -967,7 +965,7 @@ EOF
         log_info "配置文件目录: /usr/local/etc"
     else
         log_info "未检测到 GeoIP 数据库文件，跳过配置"
-        log_info "如需使用 GeoIP 功能，请手动下载数据库文件到: $GEOIP_DIR"
+        log_info "GeoIP 数据库文件位置: $GEOIP_DIR"
     fi
 }
 
