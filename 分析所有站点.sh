@@ -415,8 +415,16 @@ for CONFIG_FILE in "$CONFIG_DIR"/*.conf; do
     # 注意: --lang 参数需要 GoAccess 编译时启用 gettext 支持
     # 如果遇到 "unrecognized option '--lang=zh'" 错误,请注释掉下面这行
     # [ -n "$lang" ] && GOACCESS_ARGS+=("--lang=$lang")
-    [ -n "$html_date_format" ] && GOACCESS_ARGS+=("--html-date-format=$html_date_format")
-    [ -n "$html_num_format" ] && GOACCESS_ARGS+=("--html-num-format=$html_num_format")
+    
+    # HTML 日期和数字格式选项
+    # 注意: 参数值需要用引号包裹,避免空格导致解析错误
+    if [ -n "$html_date_format" ]; then
+        GOACCESS_ARGS+=("--html-date-format=$html_date_format")
+    fi
+    
+    if [ -n "$html_num_format" ]; then
+        GOACCESS_ARGS+=("--html-num-format=$html_num_format")
+    fi
 
     # 禁用颜色输出（因为我们使用脚本自己的颜色）
     GOACCESS_ARGS+=("--no-color")

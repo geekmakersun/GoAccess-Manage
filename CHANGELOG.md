@@ -27,6 +27,44 @@
 
 ---
 
+## [v3.0.9] - 2026-05-21 19:59 🐛 🔧
+
+<details>
+<summary>展开查看详情</summary>
+
+### 🐛 Bug修复
+
+#### 📋 配置模板修复 (配置模板.conf)
+- **🐛 注释不支持的 HTML 格式选项**：解决 `goaccess: unrecognized option '--html-date-format=%Y-%m-%d %H:%M'` 错误
+  - 注释掉 `html_date_format="%Y-%m-%d %H:%M"` 配置项
+  - 注释掉 `html_num_format=","` 配置项
+  - 添加详细的注释说明，指导用户如何处理该问题
+  - 原因：GoAccess 1.10.2 官方文档中不存在 `--html-date-format` 和 `--html-num-format` 选项
+
+#### 📜 分析脚本优化 (分析所有站点.sh)
+- **🔧 优化 HTML 格式参数处理**：改进参数传递逻辑，增强代码可读性
+  - 将单行条件判断改为 if 语句块
+  - 添加详细注释说明参数值需要用引号包裹
+  - 保持向后兼容，如果配置文件中定义了这些选项仍然会传递
+
+### 💡 设计说明
+
+#### 🔍 问题原因
+- `--html-date-format` 和 `--html-num-format` 选项在 GoAccess 官方文档中不存在
+- 这不是版本兼容性问题，而是这些选项本身就不被 GoAccess 支持
+- GoAccess 通过其他方式控制日期和数字格式（如 `--date-spec`、`--hour-spec`）
+
+#### 📚 GoAccess 支持的 HTML 参数
+- `--html-report-title` - 设置 HTML 报告标题
+- `--html-refresh` - HTML 报告刷新间隔
+- `--html-prefs` - HTML 报告偏好设置
+- `--html-custom-css` - 自定义 CSS 文件
+- `--html-custom-js` - 自定义 JS 文件
+
+</details>
+
+---
+
 ## [v3.0.8] - 2026-05-21 19:28 🔧 📝
 
 <details>
