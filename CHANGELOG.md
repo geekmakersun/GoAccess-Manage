@@ -27,6 +27,40 @@
 
 ---
 
+## [v3.0.8] - 2026-05-21 19:28 🔧 📝
+
+<details>
+<summary>展开查看详情</summary>
+
+### 🔧 工具/配置更新
+
+#### 📜 安装脚本优化 (安装GoAccess.sh)
+- **🗑️ 移除创建 GeoIP 目录的代码**：删除 `mkdir -p "$GEOIP_DIR"` 代码行
+  - GeoIP 数据库已硬编码存放在项目的 `GeoIP/` 目录中
+  - 无需在安装时创建目录，数据库由 Git 管理
+- **📝 更新提示信息**：将"如需使用 GeoIP 功能，请手动下载数据库文件"改为"GeoIP 数据库文件位置"
+
+#### 📜 卸载脚本优化 (卸载GoAccess.sh)
+- **🗑️ 移除未使用的 GeoIP 常量定义**：删除 `GEOIP_DIR`、`GEOIP_CITY_DB`、`GEOIP_ASN_DB` 常量
+  - 卸载脚本不再需要处理 GeoIP 数据库文件
+  - GeoIP 数据库属于项目目录，由 Git 管理，卸载时不清理
+
+#### 📜 脚本权限设置
+- **✅ 设置所有 .sh 脚本为可执行权限**：使用 `git update-index --chmod=+x` 设置权限
+  - 涉及文件：`分析所有站点.sh`、`安装GoAccess.sh`、`卸载GoAccess.sh`、`GeoIP/更新GeoLite2.sh`
+
+### 💡 设计说明
+
+#### 🔄 GeoIP 数据库管理简化
+- GeoIP 数据库文件已硬编码存放在项目的 `GeoIP/` 目录
+- 数据库文件通过 Git 版本控制，随项目一起分发
+- 安装脚本只负责配置 GoAccess 使用数据库，不负责下载
+- 卸载脚本不清理项目目录下的 GeoIP 数据库文件
+
+</details>
+
+---
+
 ## [v3.0.7] - 2026-05-21 19:23 🐛 🔧
 
 <details>
