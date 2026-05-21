@@ -27,6 +27,37 @@
 
 ---
 
+## [v3.0.6] - 2026-05-21 19:07 🐛 🔧
+
+<details>
+<summary>展开查看详情</summary>
+
+### 🐛 Bug修复
+
+#### 📜 分析脚本修复 (分析所有站点.sh)
+- **🐛 移除不存在的 --html-charset 参数**：解决 `goaccess: unrecognized option '--html-charset=utf-8'` 错误
+  - 删除 `[ -n "$html_charset" ] && GOACCESS_ARGS+=("--html-charset=$html_charset")` 代码行
+  - 从 `unset` 语句中移除 `html_charset` 变量
+  - GoAccess 官方文档中不存在 `--html-charset` 参数
+
+### 💡 设计说明
+
+#### 🔍 问题原因
+- `--html-charset` 参数在 GoAccess 官方文档中不存在
+- 这不是版本兼容性问题，而是脚本使用了错误的参数名
+- GoAccess 通过编译时的 `--enable-utf8` 选项支持 UTF-8，不需要单独的 charset 参数
+
+#### 📚 GoAccess 支持的 HTML 参数
+- `--html-report-title` - 设置 HTML 报告标题
+- `--html-refresh` - HTML 报告刷新间隔
+- `--html-prefs` - HTML 报告偏好设置
+- `--html-custom-css` - 自定义 CSS 文件
+- `--html-custom-js` - 自定义 JS 文件
+
+</details>
+
+---
+
 ## [v3.0.5] - 2026-05-21 19:30 🔧 🐛
 
 <details>

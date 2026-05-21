@@ -172,7 +172,7 @@ parse_and_validate_config() {
     unset max_items num_tests no_validation
     unset anonymize_ip double_decode color no_progress with_output_resolver
     unset site_name
-    unset lang html_charset html_date_format html_num_format
+    unset lang html_date_format html_num_format
 
     # 使用 source 加载配置文件（变量会自动设置到当前 Shell）
     # 2>/dev/null: 隐藏错误输出，我们会自己处理
@@ -415,7 +415,6 @@ for CONFIG_FILE in "$CONFIG_DIR"/*.conf; do
     # 注意: --lang 参数需要 GoAccess 编译时启用 gettext 支持
     # 如果遇到 "unrecognized option '--lang=zh'" 错误,请注释掉下面这行
     # [ -n "$lang" ] && GOACCESS_ARGS+=("--lang=$lang")
-    [ -n "$html_charset" ] && GOACCESS_ARGS+=("--html-charset=$html_charset")
     [ -n "$html_date_format" ] && GOACCESS_ARGS+=("--html-date-format=$html_date_format")
     [ -n "$html_num_format" ] && GOACCESS_ARGS+=("--html-num-format=$html_num_format")
 
