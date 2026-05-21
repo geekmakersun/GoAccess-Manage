@@ -36,6 +36,7 @@ readonly GEOIP_ASN_DB="$GEOIP_DIR/GeoLite2-ASN.mmdb"
 readonly GEOIP_VERSION_FILE="$GEOIP_DIR/GeoIP.version"
 readonly LOG_DIR="${PROJECT_DIR}/日志"
 readonly UPDATE_LOG="${LOG_DIR}/GeoIP更新日志.log"
+readonly AUDIT_LOG="${LOG_DIR}/审计日志.log"
 readonly GEOIP_CITY_URL="https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb"
 readonly GEOIP_ASN_URL="https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-ASN.mmdb"
 readonly GEOIP_MIRROR_URLS=(
@@ -106,6 +107,42 @@ check_command() {
         return 0
     fi
     return 1
+}
+
+# --------------------------------------------------------------------------------
+# log_audit: 记录审计日志
+# 参数：$1 - 操作描述
+# 用途：记录脚本执行的审计信息，包括用户、时间、操作等
+# --------------------------------------------------------------------------------
+log_audit() {
+    local action="$1"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local current_user=$(whoami)
+    local sudo_user=${SUDO_USER:-$current_user}
+    local sudo_uid=${SUDO_UID:-$UID}
+    local tty=$(tty 2>/dev/null || echo 'unknown')
+    local pwd_dir=$(pwd)
+    local hostname=$(hostname)
+    
+    local audit_entry="$timestamp | HOST=$hostname | FROM=$sudo_user($sudo_uid) -> TO=$current_user($UID) | TTY=$tty | PWD=$pwd_dir | SCRIPT=$SCRIPT_NAME | ACTION=$action"
+    
+    echo "$audit_entry" >> "$AUDIT_LOG" 2>/dev/null || true
+}
+
+# --------------------------------------------------------------------------------
+# log_audit_start: 记录脚本开始执行的审计信息
+# --------------------------------------------------------------------------------
+log_audit_start() {
+    log_audit "SCRIPT_START | ARGS=$*"
+}
+
+# --------------------------------------------------------------------------------
+# log_audit_end: 记录脚本结束执行的审计信息
+# 参数：$1 - 退出码
+# --------------------------------------------------------------------------------
+log_audit_end() {
+    local exit_code=$1
+    log_audit "SCRIPT_END | EXIT_CODE=$exit_code"
 }
 
 detect_os() {
@@ -514,6 +551,9 @@ echo "========================================" >> "$UPDATE_LOG" 2>/dev/null || 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] 开始更新 GeoLite2 数据库" >> "$UPDATE_LOG" 2>/dev/null || true
 echo "========================================" >> "$UPDATE_LOG" 2>/dev/null || true
 
+# 记录脚本开始执行的审计信息
+log_audit_start "$@"
+
 log_info "脚本目录: $SCRIPT_DIR"
 log_info "GeoIP 目录: $GEOIP_DIR"
 echo ""
@@ -590,6 +630,10 @@ fi
 
 cleanup_old_backups
 show_version_info
+
+# 记录审计信息：更新完成
+log_audit "GEOIP_UPDATE_COMPLETE | CITY=$UPDATE_CITY | ASN=$UPDATE_ASN | FORCE=$FORCE_UPDATE"
+log_audit_end 0
 
 echo ""
 echo -e "${CYAN}下一步：${NC}"

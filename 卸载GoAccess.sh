@@ -26,6 +26,7 @@ readonly SITES_CONFIG_DIR="${SCRIPT_DIR}/站点配置"
 readonly GOACCESS_CONFIG_DIR="/www/wwwroot/GoAccess-管理"
 readonly LOG_DIR="${SCRIPT_DIR}/日志"
 readonly UNINSTALL_LOG="${LOG_DIR}/卸载日志.log"
+readonly AUDIT_LOG="${LOG_DIR}/审计日志.log"
 
 # ================================================================================
 # ANSI 颜色代码定义
@@ -112,6 +113,42 @@ check_command() {
         return 0
     fi
     return 1
+}
+
+# --------------------------------------------------------------------------------
+# log_audit: 记录审计日志
+# 参数：$1 - 操作描述
+# 用途：记录脚本执行的审计信息，包括用户、时间、操作等
+# --------------------------------------------------------------------------------
+log_audit() {
+    local action="$1"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local current_user=$(whoami)
+    local sudo_user=${SUDO_USER:-$current_user}
+    local sudo_uid=${SUDO_UID:-$UID}
+    local tty=$(tty 2>/dev/null || echo 'unknown')
+    local pwd_dir=$(pwd)
+    local hostname=$(hostname)
+    
+    local audit_entry="$timestamp | HOST=$hostname | FROM=$sudo_user($sudo_uid) -> TO=$current_user($UID) | TTY=$tty | PWD=$pwd_dir | SCRIPT=$SCRIPT_NAME | ACTION=$action"
+    
+    echo "$audit_entry" >> "$AUDIT_LOG" 2>/dev/null || true
+}
+
+# --------------------------------------------------------------------------------
+# log_audit_start: 记录脚本开始执行的审计信息
+# --------------------------------------------------------------------------------
+log_audit_start() {
+    log_audit "SCRIPT_START | ARGS=$*"
+}
+
+# --------------------------------------------------------------------------------
+# log_audit_end: 记录脚本结束执行的审计信息
+# 参数：$1 - 退出码
+# --------------------------------------------------------------------------------
+log_audit_end() {
+    local exit_code=$1
+    log_audit "SCRIPT_END | EXIT_CODE=$exit_code"
 }
 
 # ================================================================================
@@ -1041,6 +1078,9 @@ main() {
     log_debug "REMOVE_CONFIG=$REMOVE_CONFIG, REMOVE_DB=$REMOVE_DB, REMOVE_ALL=$REMOVE_ALL"
     log_debug "CLEANUP_CRON=$CLEANUP_CRON, CLEANUP_LOGS=$CLEANUP_LOGS, REMOVE_DEPS=$REMOVE_DEPS"
     
+    # 记录审计信息：卸载参数
+    log_audit "UNINSTALL_PARAMS | REMOVE_CONFIG=$REMOVE_CONFIG | REMOVE_DB=$REMOVE_DB | REMOVE_ALL=$REMOVE_ALL | CLEANUP_CRON=$CLEANUP_CRON | CLEANUP_LOGS=$CLEANUP_LOGS | REMOVE_DEPS=$REMOVE_DEPS"
+    
     log_info "检测 GoAccess 安装状态..."
     if ! get_installed_info; then
         log_warning "未检测到已安装的 GoAccess"
@@ -1081,7 +1121,12 @@ main() {
     verify_uninstall
     
     log_step "卸载流程完成"
+    log_audit "UNINSTALL_COMPLETE"
+    log_audit_end 0
     exit 0
 }
+
+# 记录脚本开始执行的审计信息
+log_audit_start "$@"
 
 main "$@"

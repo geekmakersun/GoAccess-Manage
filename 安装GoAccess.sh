@@ -37,6 +37,7 @@ readonly GEOIP_CITY_DB="${GEOIP_DIR}/GeoLite2-City.mmdb"
 readonly GEOIP_ASN_DB="${GEOIP_DIR}/GeoLite2-ASN.mmdb"
 readonly LOG_DIR="${SCRIPT_DIR}/日志"                # 日志目录
 readonly INSTALL_LOG="${LOG_DIR}/安装日志.log"        # 安装日志文件
+readonly AUDIT_LOG="${LOG_DIR}/审计日志.log"          # 审计日志文件
 
 # ================================================================================
 # ANSI 颜色代码定义（用于美化输出）
@@ -310,6 +311,42 @@ check_command() {
         return 0
     fi
     return 1
+}
+
+# --------------------------------------------------------------------------------
+# log_audit: 记录审计日志
+# 参数：$1 - 操作描述
+# 用途：记录脚本执行的审计信息，包括用户、时间、操作等
+# --------------------------------------------------------------------------------
+log_audit() {
+    local action="$1"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local current_user=$(whoami)
+    local sudo_user=${SUDO_USER:-$current_user}
+    local sudo_uid=${SUDO_UID:-$UID}
+    local tty=$(tty 2>/dev/null || echo 'unknown')
+    local pwd_dir=$(pwd)
+    local hostname=$(hostname)
+    
+    local audit_entry="$timestamp | HOST=$hostname | FROM=$sudo_user($sudo_uid) -> TO=$current_user($UID) | TTY=$tty | PWD=$pwd_dir | SCRIPT=$SCRIPT_NAME | ACTION=$action"
+    
+    echo "$audit_entry" >> "$AUDIT_LOG" 2>/dev/null || true
+}
+
+# --------------------------------------------------------------------------------
+# log_audit_start: 记录脚本开始执行的审计信息
+# --------------------------------------------------------------------------------
+log_audit_start() {
+    log_audit "SCRIPT_START | ARGS=$*"
+}
+
+# --------------------------------------------------------------------------------
+# log_audit_end: 记录脚本结束执行的审计信息
+# 参数：$1 - 退出码
+# --------------------------------------------------------------------------------
+log_audit_end() {
+    local exit_code=$1
+    log_audit "SCRIPT_END | EXIT_CODE=$exit_code"
 }
 
 # --------------------------------------------------------------------------------
@@ -713,12 +750,17 @@ echo "========================================" >> "$INSTALL_LOG" 2>/dev/null ||
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] 开始安装 GoAccess v${GOACCESS_VERSION}" >> "$INSTALL_LOG" 2>/dev/null || true
 echo "========================================" >> "$INSTALL_LOG" 2>/dev/null || true
 
+# 记录脚本开始执行的审计信息
+log_audit_start "$@"
+
 # --------------------------------------------------------------------------------
 # 阶段 0：Git 权限修复（新增）
 # --------------------------------------------------------------------------------
 print_title "Git 仓库权限修复"
 
+log_audit "GIT_PERMISSION_FIX_START"
 fix_git_permissions
+log_audit "GIT_PERMISSION_FIX_END"
 
 # --------------------------------------------------------------------------------
 # 阶段 1：版本检查
@@ -1072,3 +1114,7 @@ fi
 
 echo -e "${BLUE}详细说明请参考：README.md${NC}"
 echo ""
+
+# 记录安装完成的审计信息
+log_audit "INSTALL_COMPLETE | VERSION=$GOACCESS_VERSION"
+log_audit_end 0
