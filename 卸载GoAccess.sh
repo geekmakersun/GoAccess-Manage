@@ -24,6 +24,8 @@ readonly GOACCESS_VERSION="1.10.2"
 readonly WORK_DIR="/tmp/goaccess-build"
 readonly SITES_CONFIG_DIR="${SCRIPT_DIR}/站点配置"
 readonly GOACCESS_CONFIG_DIR="/www/wwwroot/GoAccess-管理"
+readonly LOG_DIR="${SCRIPT_DIR}/日志"
+readonly UNINSTALL_LOG="${LOG_DIR}/卸载日志.log"
 
 # ================================================================================
 # ANSI 颜色代码定义
@@ -66,23 +68,33 @@ print_title() {
 }
 
 log_info() {
-    echo -e "${YELLOW}[INFO] $1${NC}"
+    local msg="$1"
+    echo -e "${YELLOW}[INFO] $msg${NC}"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $msg" >> "$UNINSTALL_LOG" 2>/dev/null || true
 }
 
 log_success() {
-    echo -e "${GREEN}[OK] $1${NC}"
+    local msg="$1"
+    echo -e "${GREEN}[OK] $msg${NC}"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [OK] $msg" >> "$UNINSTALL_LOG" 2>/dev/null || true
 }
 
 log_error() {
-    echo -e "${RED}[ERROR] $1${NC}" >&2
+    local msg="$1"
+    echo -e "${RED}[ERROR] $msg${NC}" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $msg" >> "$UNINSTALL_LOG" 2>/dev/null || true
 }
 
 log_warning() {
-    echo -e "${YELLOW}[WARNING] $1${NC}"
+    local msg="$1"
+    echo -e "${YELLOW}[WARNING] $msg${NC}"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [WARNING] $msg" >> "$UNINSTALL_LOG" 2>/dev/null || true
 }
 
 log_removed() {
-    echo -e "${RED}[REMOVED] $1${NC}"
+    local msg="$1"
+    echo -e "${RED}[REMOVED] $msg${NC}"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [REMOVED] $msg" >> "$UNINSTALL_LOG" 2>/dev/null || true
 }
 
 log_debug() {
@@ -1007,6 +1019,14 @@ main() {
     echo ""
     print_title "GoAccess 彻底卸载脚本"
     echo ""
+    
+    if [ ! -d "$LOG_DIR" ]; then
+        mkdir -p "$LOG_DIR"
+    fi
+    
+    echo "========================================" >> "$UNINSTALL_LOG" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 开始卸载 GoAccess" >> "$UNINSTALL_LOG" 2>/dev/null || true
+    echo "========================================" >> "$UNINSTALL_LOG" 2>/dev/null || true
     
     log_step "脚本启动"
     log_debug "脚本目录: $SCRIPT_DIR"

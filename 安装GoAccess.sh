@@ -35,6 +35,8 @@ readonly WORK_DIR="/tmp/goaccess-build"              # 临时工作目录
 readonly GEOIP_DIR="${SCRIPT_DIR}/GeoIP"
 readonly GEOIP_CITY_DB="${GEOIP_DIR}/GeoLite2-City.mmdb"
 readonly GEOIP_ASN_DB="${GEOIP_DIR}/GeoLite2-ASN.mmdb"
+readonly LOG_DIR="${SCRIPT_DIR}/日志"                # 日志目录
+readonly INSTALL_LOG="${LOG_DIR}/安装日志.log"        # 安装日志文件
 
 # ================================================================================
 # ANSI 颜色代码定义（用于美化输出）
@@ -262,7 +264,9 @@ print_title() {
 # 参数：$1 - 信息内容
 # --------------------------------------------------------------------------------
 log_info() {
-    echo -e "${YELLOW}[INFO] $1${NC}"
+    local msg="$1"
+    echo -e "${YELLOW}[INFO] $msg${NC}"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $msg" >> "$INSTALL_LOG" 2>/dev/null || true
 }
 
 # --------------------------------------------------------------------------------
@@ -270,7 +274,9 @@ log_info() {
 # 参数：$1 - 成功信息
 # --------------------------------------------------------------------------------
 log_success() {
-    echo -e "${GREEN}[OK] $1${NC}"
+    local msg="$1"
+    echo -e "${GREEN}[OK] $msg${NC}"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [OK] $msg" >> "$INSTALL_LOG" 2>/dev/null || true
 }
 
 # --------------------------------------------------------------------------------
@@ -278,7 +284,9 @@ log_success() {
 # 参数：$1 - 错误信息
 # --------------------------------------------------------------------------------
 log_error() {
-    echo -e "${RED}[ERROR] $1${NC}" >&2
+    local msg="$1"
+    echo -e "${RED}[ERROR] $msg${NC}" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $msg" >> "$INSTALL_LOG" 2>/dev/null || true
 }
 
 # --------------------------------------------------------------------------------
@@ -286,7 +294,9 @@ log_error() {
 # 参数：$1 - 警告信息
 # --------------------------------------------------------------------------------
 log_warning() {
-    echo -e "${YELLOW}[WARNING] $1${NC}"
+    local msg="$1"
+    echo -e "${YELLOW}[WARNING] $msg${NC}"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [WARNING] $msg" >> "$INSTALL_LOG" 2>/dev/null || true
 }
 
 # --------------------------------------------------------------------------------
@@ -689,6 +699,14 @@ install_deps() {
 # ================================================================================
 
 print_title "GoAccess 编译安装脚本 v2.0"
+
+if [ ! -d "$LOG_DIR" ]; then
+    mkdir -p "$LOG_DIR"
+fi
+
+echo "========================================" >> "$INSTALL_LOG" 2>/dev/null || true
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] 开始安装 GoAccess v${GOACCESS_VERSION}" >> "$INSTALL_LOG" 2>/dev/null || true
+echo "========================================" >> "$INSTALL_LOG" 2>/dev/null || true
 
 # --------------------------------------------------------------------------------
 # 阶段 0：Git 权限修复（新增）

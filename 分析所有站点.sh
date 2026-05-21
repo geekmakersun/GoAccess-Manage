@@ -26,6 +26,8 @@ export LANG="zh_CN.UTF-8"
 readonly SCRIPT_NAME="$(basename "$0")"              # 脚本文件名
 readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)" # 脚本所在目录（绝对路径）
 readonly CONFIG_DIR="$SCRIPT_DIR/站点配置"          # 站点配置目录
+readonly LOG_DIR="$SCRIPT_DIR/日志"                  # 日志目录
+readonly ERROR_LOG="$LOG_DIR/分析错误日志.log"   # 错误日志文件
 
 # ================================================================================
 # ANSI 颜色代码定义（用于美化输出）
@@ -207,6 +209,12 @@ echo ""
 # 3. 确保数据目录存在
 # --------------------------------------------------------------------------------
 log_section "1/5" "检查环境"
+
+# 检查日志目录是否存在，不存在则创建
+if [ ! -d "$LOG_DIR" ]; then
+    mkdir -p "$LOG_DIR"
+    log_info "创建日志目录: $LOG_DIR"
+fi
 
 # 检查运行用户（建议使用 www 用户运行，以匹配网站运行身份）
 # 说明：以 www 用户运行可确保生成的文件权限正确，避免网站无法访问报告
@@ -433,12 +441,12 @@ for CONFIG_FILE in "$CONFIG_DIR"/*.conf; do
     echo -e "  ${GREEN}执行分析...${NC}"
 
     goaccess_rc=0
-    goaccess "${GOACCESS_ARGS[@]}" 2> >(tee -a "$SCRIPT_DIR/goaccess-error.log" >&2) || goaccess_rc=$?
+    goaccess "${GOACCESS_ARGS[@]}" 2> >(tee -a "$ERROR_LOG" >&2) || goaccess_rc=$?
     if [ $goaccess_rc -eq 0 ]; then
         log_success "完成: $output_html"
         SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
     else
-        log_error "分析失败（详细日志: $SCRIPT_DIR/goaccess-error.log）"
+        log_error "分析失败（详细日志: $ERROR_LOG）"
         FAIL_COUNT=$((FAIL_COUNT + 1))
     fi
 done

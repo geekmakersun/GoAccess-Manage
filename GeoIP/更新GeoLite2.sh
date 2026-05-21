@@ -34,6 +34,8 @@ readonly GEOIP_DIR="$SCRIPT_DIR"
 readonly GEOIP_CITY_DB="$GEOIP_DIR/GeoLite2-City.mmdb"
 readonly GEOIP_ASN_DB="$GEOIP_DIR/GeoLite2-ASN.mmdb"
 readonly GEOIP_VERSION_FILE="$GEOIP_DIR/GeoIP.version"
+readonly LOG_DIR="${PROJECT_DIR}/日志"
+readonly UPDATE_LOG="${LOG_DIR}/GeoIP更新日志.log"
 readonly GEOIP_CITY_URL="https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb"
 readonly GEOIP_ASN_URL="https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-ASN.mmdb"
 readonly GEOIP_MIRROR_URLS=(
@@ -78,7 +80,9 @@ print_title() {
 }
 
 log_info() {
-    echo -e "${YELLOW}[INFO] $1${NC}"
+    local msg="$1"
+    echo -e "${YELLOW}[INFO] $msg${NC}"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $msg" >> "$UPDATE_LOG" 2>/dev/null || true
 }
 
 log_success() {
@@ -86,11 +90,15 @@ log_success() {
 }
 
 log_error() {
-    echo -e "${RED}[ERROR] $1${NC}" >&2
+    local msg="$1"
+    echo -e "${RED}[ERROR] $msg${NC}" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $msg" >> "$UPDATE_LOG" 2>/dev/null || true
 }
 
 log_warning() {
-    echo -e "${YELLOW}[WARNING] $1${NC}"
+    local msg="$1"
+    echo -e "${YELLOW}[WARNING] $msg${NC}"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [WARNING] $msg" >> "$UPDATE_LOG" 2>/dev/null || true
 }
 
 check_command() {
@@ -497,6 +505,14 @@ show_usage() {
 # ================================================================================
 
 print_title "GeoLite2 数据库更新脚本 v2.0"
+
+if [ ! -d "$LOG_DIR" ]; then
+    mkdir -p "$LOG_DIR"
+fi
+
+echo "========================================" >> "$UPDATE_LOG" 2>/dev/null || true
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] 开始更新 GeoLite2 数据库" >> "$UPDATE_LOG" 2>/dev/null || true
+echo "========================================" >> "$UPDATE_LOG" 2>/dev/null || true
 
 log_info "脚本目录: $SCRIPT_DIR"
 log_info "GeoIP 目录: $GEOIP_DIR"
