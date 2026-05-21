@@ -22,7 +22,6 @@ set -eo pipefail
 readonly SCRIPT_NAME="$(basename "$0")"              # 脚本文件名
 readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)" # 脚本所在目录（绝对路径）
 readonly CONFIG_DIR="$SCRIPT_DIR/站点配置"          # 站点配置目录
-readonly DB_DIR="$SCRIPT_DIR/GoAccess数据库"              # 数据持久化目录（GoAccess数据库）
 
 # ================================================================================
 # ANSI 颜色代码定义（用于美化输出）
@@ -164,7 +163,6 @@ parse_and_validate_config() {
     unset exclude_extension include_extension
     unset ignore_crawlers ignore_ip ignore_host ignore_referer
     unset after before
-    unset keep_db keep_last
     unset html_report_title real_time_html ws_url
     unset geoip_database
     unset max_items num_tests no_validation
@@ -178,8 +176,8 @@ parse_and_validate_config() {
         return 1
     fi
 
-    # 验证必需配置项：日志路径、数据库路径、输出路径
-    if [ -z "$log_file" ] || [ -z "$db_path" ] || [ -z "$output_html" ]; then
+    # 验证必需配置项：日志路径、输出路径
+    if [ -z "$log_file" ] || [ -z "$output_html" ]; then
         log_error "配置不完整，缺少必需项"
         return 1
     fi
@@ -225,18 +223,6 @@ if ! command -v goaccess &> /dev/null; then
 fi
 log_success "GoAccess 已安装"
 
-# 获取 GoAccess 版本并检查是否支持 --keep-db 选项
-GOACCESS_VERSION=$(goaccess --version 2>&1 | head -n 1 | sed -n 's/.*GoAccess v\?\([0-9]*\.[0-9]*\).*/\1/p')
-GOACCESS_MAJOR=${GOACCESS_VERSION%%.*}
-GOACCESS_MINOR=${GOACCESS_VERSION#*.}
-GOACCESS_MINOR=${GOACCESS_MINOR%%.*}
-KEEP_DB_SUPPORTED=false
-if [ -n "$GOACCESS_MAJOR" ] && [ -n "$GOACCESS_MINOR" ]; then
-    if [ "$GOACCESS_MAJOR" -gt 1 ] || { [ "$GOACCESS_MAJOR" -eq 1 ] && [ "$GOACCESS_MINOR" -ge 3 ]; }; then
-        KEEP_DB_SUPPORTED=true
-    fi
-fi
-
 # 检查配置目录是否存在
 if [ ! -d "$CONFIG_DIR" ]; then
     log_error "配置目录不存在: $CONFIG_DIR"
@@ -248,13 +234,6 @@ log_success "配置目录正常: $CONFIG_DIR"
 if [ ! -r "$CONFIG_DIR" ]; then
     log_error "配置目录不可读: $CONFIG_DIR"
     exit 1
-fi
-
-# 确保数据目录存在
-if [ ! -d "$DB_DIR" ]; then
-    log_info "创建数据目录: $DB_DIR"
-    mkdir -p "$DB_DIR"
-    chmod 777 "$DB_DIR" 2>/dev/null || true
 fi
 echo ""
 
@@ -358,29 +337,11 @@ for CONFIG_FILE in "$CONFIG_DIR"/*.conf; do
         continue
     fi
 
-    # 确保数据库的父目录存在（使用 777 权限确保 www 用户可写）
-    DB_PARENT=$(dirname "$db_path")
-    if [ ! -d "$DB_PARENT" ]; then
-        mkdir -p "$DB_PARENT"
-        chmod 777 "$DB_PARENT" 2>/dev/null || true
-    fi
-
-    # 检查数据库目录是否可写
-    if [ ! -w "$DB_PARENT" ]; then
-        log_warning "数据库目录不可写: $DB_PARENT"
-        log_info "请检查目录权限：chmod 777 $DB_PARENT"
-        SKIP_COUNT=$((SKIP_COUNT + 1))
-        continue
-    fi
-
     # 设置默认值（如果配置文件中没有指定）
     [ -z "$log_format" ] && log_format="COMBINED"  # 默认：Nginx 组合格式
-    [ -z "$keep_db" ] && keep_db="true"           # 默认：保留历史数据
-    [ -z "$site_name" ] && site_name="$SITE_NAME" # 默认：站点名使用配置文件名
 
     # 输出当前配置信息（方便调试）
     echo -e "  ${BLUE}日志文件:${NC} $log_file"
-    echo -e "  ${BLUE}数据库:${NC}   $db_path"
     echo -e "  ${BLUE}报告:${NC}     $output_html"
     echo -e "  ${BLUE}格式:${NC}      $log_format"
 
@@ -389,11 +350,6 @@ for CONFIG_FILE in "$CONFIG_DIR"/*.conf; do
     GOACCESS_ARGS+=("$log_file")                    # 日志文件路径
     GOACCESS_ARGS+=("-o" "$output_html")            # 输出 HTML 文件
     GOACCESS_ARGS+=("--log-format=$log_format")    # 日志格式
-    GOACCESS_ARGS+=("--db-path=$db_path")          # 数据持久化路径
-
-    # 数据持久化相关
-    [ "$keep_db" = "true" ] || [ "$keep_db" = "1" ] && [ "$KEEP_DB_SUPPORTED" = "true" ] && GOACCESS_ARGS+=("--keep-db=1")
-    [ -n "$keep_last" ] && GOACCESS_ARGS+=("--keep-last=$keep_last")
 
     # 日志格式相关（自定义格式）
     [ -n "$time_format" ] && GOACCESS_ARGS+=("--time-format=$time_format")
