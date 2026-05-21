@@ -8,7 +8,6 @@
 
 - 🚀 **自动化安装**：从源代码编译安装最新版 GoAccess
 - 🌐 **多站点支持**：通过配置文件管理多个站点，互不干扰
-- 💾 **数据持久化**：保留GoAccess数据库，支持趋势分析
 - 🌍 **地理位置分析**：集成免费版 GeoLite2 数据库
 - 📊 **HTML 报告**：生成美观的可视化报告
 - 🔄 **自动化更新**：支持定时任务自动更新报告和 GeoIP 数据库
@@ -29,8 +28,7 @@ GoAccess-管理/               # 🎯 管理目录（所有管理文件在这里
 ├── .gitignore              # Git 忽略规则
 ├── .gitattributes          # Git 属性配置
 ├── 配置模板.conf           # 📋 配置模板
-├── 站点配置/               # 📝 站点配置文件目录
-└── GoAccess数据库/         # 💾 数据目录（持久化数据库）
+└── 站点配置/               # 📝 站点配置文件目录
 
 /www/wwwroot/
 └── 您的网站/              # 🌐 各站点目录
@@ -116,9 +114,6 @@ ls -la /www/wwwlogs/您的域名.log
 
 # 检查输出目录权限
 ls -la /www/wwwroot/您的域名/
-
-# 检查数据库目录权限
-ls -la /www/wwwroot/GoAccess-管理/GoAccess数据库/
 ```
 
 ## 📖 详细文档
@@ -133,9 +128,6 @@ ls -la /www/wwwroot/GoAccess-管理/GoAccess数据库/
 ```bash
 # 日志文件路径（支持通配符）
 log-file=/www/wwwlogs/您的域名.log
-
-# 数据库路径（数据持久化）
-db-path=/www/wwwroot/GoAccess-管理/GoAccess数据库/您的域名
 
 # HTML 报告输出路径
 output-html=/www/wwwroot/您的域名/site-log.html
@@ -153,12 +145,6 @@ html-report-title=网站访问分析
 
 # GeoIP 数据库路径
 geoip-database=/usr/share/GeoIP/GeoLite2-City.mmdb
-
-# 数据持久化
-keep-db=true
-
-# 保留最近 30 天数据（可选）
-# keep-last=30
 
 # 忽略爬虫（默认不启用，完整统计）
 # ignore-crawlers=true
@@ -187,4 +173,4 @@ keep-db=true
 
 ---
 
-**最后更新：2026-05-21 17:07 (v3.0.2)**
+**最后更新：2026-05-21 18:10 (v3.0.3)**

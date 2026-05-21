@@ -957,7 +957,6 @@ else
 
 site_name="默认站点"
 log_file="/www/wwwlogs/your-domain.log"
-db_path="${SCRIPT_DIR}/GoAccess数据库/默认站点.db"
 output_html="/www/wwwroot/your-domain/site-log.html"
 log_format=COMBINED
 EOF
