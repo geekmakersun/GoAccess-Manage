@@ -27,6 +27,48 @@
 
 ---
 
+## [v2.9.4] - 2026-05-21 09:48 🔧 🐛
+
+<details>
+<summary>展开查看详情</summary>
+
+### 🔧 功能优化
+
+#### 📜 GeoIP 数据库下载优化 (安装GoAccess.sh)
+- **🌐 多镜像源支持**：添加多个 GeoIP 数据库下载镜像源（GitHub、jsDelivr CDN、Fastly CDN），提高下载成功率
+- **✅ 文件完整性验证**：下载后验证文件大小（必须 > 1MB），确保下载完整
+- **🔄 备用方案**：如果所有镜像源都失败，尝试使用 `geoipupdate` 工具更新数据库
+- **📦 ASN 数据库支持**：新增 GeoLite2-ASN 数据库下载，提供更丰富的地理位置信息
+
+#### ⚙️ GoAccess 配置自动化
+- **📝 自动创建配置文件**：安装时自动创建 `/usr/local/etc/goaccess/goaccess.conf` 配置文件
+- **🔗 自动指定数据库路径**：配置文件中自动指定 GeoIP 数据库路径，解决 "Unable to open GeoIP2 database" 错误
+- **🔒 权限自动设置**：自动设置正确的文件权限（644）和所有者（root:root）
+
+### 🐛 Bug 修复
+
+#### 🗑️ 卸载脚本优化 (卸载GoAccess.sh)
+- **🎯 精确清理 GeoIP 数据库**：只删除 GeoLite2-City.mmdb 和 GeoLite2-ASN.mmdb，避免误删其他程序的数据
+- **🧹 智能目录清理**：检查 GeoIP 目录是否为空，空目录才删除，避免误删其他文件
+- **📄 配置文件清理**：新增清理 GoAccess 配置文件和配置目录的逻辑
+- **📊 清理统计优化**：准确统计并显示清理的数据库文件数量
+
+### 💡 改进说明
+
+#### 🔧 安装脚本改进
+- 优化 `download_with_retry()` 函数，调整超时时间为 30 秒
+- 新增 `download_geoip_database()` 专用函数，支持多镜像源切换
+- 改进下载命令参数，使用 `-q` 静默模式和 `--tries=1` 避免重复尝试
+
+#### 🧹 卸载脚本改进
+- 新增 `GEOIP_CITY_DB` 和 `GEOIP_ASN_DB` 常量，精确指定数据库文件
+- 新增 `GOACCESS_CONFIG_DIR` 常量，支持配置文件清理
+- 优化清理逻辑，先删除文件再检查目录是否为空
+
+</details>
+
+---
+
 ## [v2.9.3] - 2026-05-21 08:40 🛡️
 
 <details>

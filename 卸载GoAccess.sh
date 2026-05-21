@@ -23,7 +23,10 @@ readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 readonly GOACCESS_VERSION="1.10.2"
 readonly WORK_DIR="/tmp/goaccess-build"
 readonly GEOIP_DIR="/usr/share/GeoIP"
+readonly GEOIP_CITY_DB="${GEOIP_DIR}/GeoLite2-City.mmdb"
+readonly GEOIP_ASN_DB="${GEOIP_DIR}/GeoLite2-ASN.mmdb"
 readonly SITES_CONFIG_DIR="${SCRIPT_DIR}/站点配置"
+readonly GOACCESS_CONFIG_DIR="/usr/local/etc/goaccess"
 
 # ================================================================================
 # ANSI 颜色代码定义
@@ -594,17 +597,35 @@ remove_geoip_database() {
     if [ "$REMOVE_DB" = true ]; then
         log_info "正在移除 GeoIP 数据库..."
         
+        local db_count=0
+        
+        if [ -f "$GEOIP_CITY_DB" ]; then
+            rm -f "$GEOIP_CITY_DB"
+            log_removed "已移除: $GEOIP_CITY_DB"
+            db_count=$((db_count + 1))
+        fi
+        
+        if [ -f "$GEOIP_ASN_DB" ]; then
+            rm -f "$GEOIP_ASN_DB"
+            log_removed "已移除: $GEOIP_ASN_DB"
+            db_count=$((db_count + 1))
+        fi
+        
         if [ -d "$GEOIP_DIR" ]; then
-            local db_files=$(find "$GEOIP_DIR" -name "*.mmdb" 2>/dev/null | wc -l)
-            
-            if rm -rf "$GEOIP_DIR"; then
-                log_removed "已移除: $GEOIP_DIR"
-                log_success "已清理 $db_files 个 GeoIP 数据库文件"
+            local remaining_files=$(find "$GEOIP_DIR" -type f 2>/dev/null | wc -l)
+            if [ "$remaining_files" -eq 0 ]; then
+                rm -rf "$GEOIP_DIR"
+                log_removed "已移除空目录: $GEOIP_DIR"
             else
-                log_error "移除失败: $GEOIP_DIR"
+                log_info "GeoIP 目录中还有其他文件，保留目录"
+                log_info "剩余文件: $remaining_files 个"
             fi
+        fi
+        
+        if [ "$db_count" -gt 0 ]; then
+            log_success "已清理 $db_count 个 GeoIP 数据库文件"
         else
-            log_info "GeoIP 目录不存在，跳过"
+            log_info "未找到 GeoIP 数据库文件"
         fi
         
         log_info "清理用户目录下的数据库..."
@@ -612,6 +633,22 @@ remove_geoip_database() {
         if [ -f "$home_db" ]; then
             rm -f "$home_db"
             log_removed "已移除: $home_db"
+        fi
+        
+        log_info "清理 GoAccess 配置文件..."
+        if [ -d "$GOACCESS_CONFIG_DIR" ]; then
+            if [ -f "${GOACCESS_CONFIG_DIR}/goaccess.conf" ]; then
+                rm -f "${GOACCESS_CONFIG_DIR}/goaccess.conf"
+                log_removed "已移除: ${GOACCESS_CONFIG_DIR}/goaccess.conf"
+            fi
+            
+            local remaining_config=$(find "$GOACCESS_CONFIG_DIR" -type f 2>/dev/null | wc -l)
+            if [ "$remaining_config" -eq 0 ]; then
+                rm -rf "$GOACCESS_CONFIG_DIR"
+                log_removed "已移除空目录: $GOACCESS_CONFIG_DIR"
+            else
+                log_info "配置目录中还有其他文件，保留目录"
+            fi
         fi
     else
         log_info "跳过 GeoIP 数据库移除（使用 -d 或 --all 选项可移除）"
