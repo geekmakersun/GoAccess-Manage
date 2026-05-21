@@ -552,14 +552,25 @@ install_deps() {
             deps+=("libmaxminddb-dev")
             
             # gettext 支持（多语言支持）
+            # 需要完整的 gettext 开发包才能编译支持
             deps+=("gettext")
             deps+=("autopoint")
+            deps+=("gettext-base")
+            
+            # automake 和 autoconf（某些系统可能需要）
+            deps+=("automake")
+            deps+=("autoconf")
             
             # pkg-config（可能需要）
             deps+=("pkg-config")
             
             log_info "安装依赖包: ${deps[*]}"
-            $PKG_MANAGER install -y "${deps[@]}"
+            $PKG_MANAGER install -y "${deps[@]}" || {
+                log_warning "部分依赖安装失败，尝试逐个安装..."
+                for dep in "${deps[@]}"; do
+                    $PKG_MANAGER install -y "$dep" || log_warning "无法安装 $dep，可能已存在或不可用"
+                done
+            }
             ;;
         
         RHEL)
@@ -594,14 +605,29 @@ install_deps() {
             fi
             
             # gettext 支持（多语言支持）
+            # 需要完整的 gettext 开发包才能编译支持
             deps+=("gettext")
             deps+=("gettext-devel")
+            deps+=("gettext-libs")
+            
+            # automake 和 autoconf（某些系统可能需要）
+            if ! rpm -q automake &>/dev/null; then
+                deps+=("automake")
+            fi
+            if ! rpm -q autoconf &>/dev/null; then
+                deps+=("autoconf")
+            fi
             
             # pkgconfig
             deps+=("pkgconfig")
             
             log_info "安装依赖包: ${deps[*]}"
-            $PKG_MANAGER install -y "${deps[@]}"
+            $PKG_MANAGER install -y "${deps[@]}" || {
+                log_warning "部分依赖安装失败，尝试逐个安装..."
+                for dep in "${deps[@]}"; do
+                    $PKG_MANAGER install -y "$dep" || log_warning "无法安装 $dep，可能已存在或不可用"
+                done
+            }
             ;;
         
         Arch)
@@ -618,9 +644,16 @@ install_deps() {
             deps+=("libmaxminddb")
             deps+=("gettext")
             deps+=("pkg-config")
+            deps+=("automake")
+            deps+=("autoconf")
             
             log_info "安装依赖包: ${deps[*]}"
-            $PKG_MANAGER -S --noconfirm "${deps[@]}"
+            $PKG_MANAGER -S --noconfirm "${deps[@]}" || {
+                log_warning "部分依赖安装失败，尝试逐个安装..."
+                for dep in "${deps[@]}"; do
+                    $PKG_MANAGER -S --noconfirm "$dep" || log_warning "无法安装 $dep，可能已存在或不可用"
+                done
+            }
             ;;
         
         SUSE)
@@ -635,9 +668,16 @@ install_deps() {
             deps+=("gettext")
             deps+=("gettext-devel")
             deps+=("pkg-config")
+            deps+=("automake")
+            deps+=("autoconf")
             
             log_info "安装依赖包: ${deps[*]}"
-            $PKG_MANAGER install -y "${deps[@]}"
+            $PKG_MANAGER install -y "${deps[@]}" || {
+                log_warning "部分依赖安装失败，尝试逐个安装..."
+                for dep in "${deps[@]}"; do
+                    $PKG_MANAGER install -y "$dep" || log_warning "无法安装 $dep，可能已存在或不可用"
+                done
+            }
             ;;
     esac
     
@@ -786,14 +826,8 @@ echo ""
 # --------------------------------------------------------------------------------
 log_info "配置编译选项..."
 
-# 基础编译参数
 config_args="--enable-utf8 --enable-gettext"
 
-# 自定义配置文件目录
-readonly GOACCESS_CONFIG_DIR="/www/wwwroot/GoAccess-管理"
-config_args="$config_args --sysconfdir=$GOACCESS_CONFIG_DIR"
-
-# 检查是否有 GeoIP2 库
 if check_command pkg-config && pkg-config --exists libmaxminddb 2>/dev/null; then
     config_args="$config_args --enable-geoip=mmdb"
     log_info "GeoIP2 支持: 已启用"
@@ -802,7 +836,9 @@ else
 fi
 
 log_info "编译参数: $config_args"
+echo ""
 
+log_info "开始配置（这可能需要几分钟）..."
 if ! ./configure $config_args; then
     log_error "配置失败，请检查日志"
     echo ""
@@ -811,7 +847,18 @@ if ! ./configure $config_args; then
     echo "  - 可能缺少某些依赖库"
     exit 1
 fi
+
 log_success "配置完成"
+
+echo ""
+log_info "验证 gettext 支持..."
+if grep -q "ENABLE_NLS.*1" config.h 2>/dev/null || grep -q "HAVE_LIBINTL_H" config.h 2>/dev/null; then
+    log_success "✓ gettext 支持已正确配置"
+else
+    log_warning "⚠ gettext 支持可能未正确配置"
+    log_warning "  这将导致无法使用中文界面（--lang=zh 选项）"
+    log_warning "  如果需要中文支持，请检查 gettext 相关依赖是否正确安装"
+fi
 echo ""
 
 # --------------------------------------------------------------------------------
@@ -864,8 +911,24 @@ if check_command goaccess; then
     echo -e "${BLUE}安装路径:${NC}"
     which goaccess
     echo ""
-    echo -e "${BLUE}编译特性:${NC}"
-    goaccess --help | head -20
+    echo -e "${BLUE}编译特性检查:${NC}"
+    
+    if goaccess --help 2>&1 | grep -q "\-\-lang"; then
+        log_success "✓ gettext 支持: 已启用（支持 --lang 选项）"
+    else
+        log_warning "✗ gettext 支持: 未启用（不支持 --lang 选项）"
+        log_warning "  这将导致无法使用中文界面"
+    fi
+    
+    if goaccess --help 2>&1 | grep -q "\-\-geoip-database"; then
+        log_success "✓ GeoIP 支持: 已启用"
+    else
+        log_warning "✗ GeoIP 支持: 未启用"
+    fi
+    
+    echo ""
+    echo -e "${BLUE}帮助信息（前20行）:${NC}"
+    goaccess --help 2>&1 | head -20
 else
     log_error "安装验证失败"
     exit 1
@@ -879,9 +942,8 @@ print_title "配置 GeoIP 数据库"
 
 mkdir -p "$GEOIP_DIR"
 
-# 创建 GoAccess 配置文件以指定 GeoIP 数据库路径
 create_goaccess_config() {
-    local config_file="${GOACCESS_CONFIG_DIR}/goaccess.conf"
+    local config_file="/usr/local/etc/goaccess.conf"
     
     log_info "配置 GoAccess 使用 GeoIP 数据库..."
     
@@ -902,7 +964,7 @@ EOF
         
         chmod 644 "$config_file"
         log_success "GoAccess 配置文件已创建: $config_file"
-        log_info "配置文件目录: $GOACCESS_CONFIG_DIR"
+        log_info "配置文件目录: /usr/local/etc"
     else
         log_info "未检测到 GeoIP 数据库文件，跳过配置"
         log_info "如需使用 GeoIP 功能，请手动下载数据库文件到: $GEOIP_DIR"

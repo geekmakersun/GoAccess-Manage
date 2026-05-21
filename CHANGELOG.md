@@ -27,6 +27,51 @@
 
 ---
 
+## [v3.0.4] - 2026-05-21 18:34 🔧 📝
+
+<details>
+<summary>展开查看详情</summary>
+
+### 🔧 工具/配置更新
+
+#### 📜 安装脚本优化 (安装GoAccess.sh)
+- **📂 配置文件路径调整**：将 GoAccess 配置文件路径从自定义路径 `/www/wwwroot/GoAccess-管理` 改为默认路径 `/usr/local/etc`
+  - 移除 `--sysconfdir` 编译参数，使用 GoAccess 默认配置路径
+  - 配置文件位置：`/usr/local/etc/goaccess.conf`
+- **📦 gettext 依赖增强**：完善各系统的 gettext 开发包依赖，确保中文界面支持
+  - **RHEL/CentOS**：添加 `gettext-libs`、`automake`、`autoconf` 包
+  - **Debian/Ubuntu**：添加 `gettext-base`、`automake`、`autoconf` 包
+  - **Arch Linux**：添加 `automake`、`autoconf` 包
+  - **SUSE**：添加 `automake`、`autoconf` 包
+- **🛡️ 依赖安装容错机制**：批量安装失败时自动逐个尝试安装，避免因某个包问题导致整体失败
+- **🔍 编译验证增强**：添加 gettext 支持的详细验证
+  - 配置阶段检查 `config.h` 中的 `ENABLE_NLS` 和 `HAVE_LIBINTL_H` 宏定义
+  - 安装验证阶段检查 `--lang` 和 `--geoip-database` 选项支持
+- **📝 详细提示信息**：gettext 未正确配置时提供明确的警告和解决建议
+
+#### 📋 配置模板更新 (配置模板.conf)
+- **📝 故障排除说明**：添加详细的 gettext 支持故障排除指南
+  - 说明 `--lang=zh` 错误的原因和解决方法
+  - 提供各系统的 gettext 依赖安装命令
+  - 添加验证 gettext 是否启用的方法
+  - 提供备用方案（注释 lang 配置使用英文界面）
+
+### 💡 设计说明
+
+#### 🔄 配置路径标准化
+- 使用 GoAccess 默认配置路径，符合软件标准规范
+- 避免自定义路径可能带来的兼容性问题
+- 配置文件与系统其他软件保持一致的路径结构
+
+#### 🌐 gettext 支持完善
+- 解决部分系统因 gettext 依赖不完整导致编译失败的问题
+- 添加多层验证机制，确保 gettext 功能正确启用
+- 提供详细的故障排除文档，帮助用户快速定位问题
+
+</details>
+
+---
+
 ## [v3.0.3] - 2026-05-21 18:10 🗑️ 📝
 
 <details>
