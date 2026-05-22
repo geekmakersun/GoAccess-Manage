@@ -27,6 +27,35 @@
 
 ---
 
+## [v3.3.2] - 2026-05-22 13:09 🐛 🔧
+
+<details>
+<summary>展开查看详情</summary>
+
+### 🐛 Bug修复
+
+#### 📜 审计配置脚本操作系统兼容性修复 (配置审计系统.sh)
+- **🐛 添加 OpenCloudOS 和 Anolis OS 支持**：修复 `不支持的操作系统: opencloudos` 错误
+  - 在 `detect_os()` 函数的 case 分支中添加 `opencloudos` 和 `anolis`
+  - OpenCloudOS 是腾讯云主导的开源 Linux 发行版，基于 RHEL 体系
+  - Anolis OS 是阿里云的开源 Linux 发行版，同样基于 RHEL 体系
+  - 两者都使用 `yum` 或 `dnf` 包管理器和 `auditd` 审计系统
+
+### 💡 设计说明
+
+#### 🔍 问题原因
+- OpenCloudOS 和 Anolis OS 的 `/etc/os-release` 文件中 `ID` 字段分别为 `opencloudos` 和 `anolis`
+- 原脚本的 `detect_os()` 函数未包含这两个操作系统 ID
+- 导致脚本无法识别这两个国产 Linux 发行版
+
+#### 📚 支持的操作系统
+- **RHEL 家族**：CentOS, Rocky, AlmaLinux, RHEL, Fedora, OpenCloudOS, Anolis
+- 使用相同的包管理器（`yum`/`dnf`）和审计系统（`auditd`）
+
+</details>
+
+---
+
 ## [v3.3.1] - 2026-05-22 13:08 🐛 📝 🔧
 
 <details>

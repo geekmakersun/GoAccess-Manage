@@ -99,7 +99,7 @@ detect_os() {
                 OS_FAMILY="Debian"
                 PKG_MANAGER="apt-get"
                 ;;
-            centos|rocky|almalinux|rhel|fedora)
+            centos|rocky|almalinux|rhel|fedora|opencloudos|anolis)
                 OS_FAMILY="RHEL"
                 if check_command dnf; then
                     PKG_MANAGER="dnf"
