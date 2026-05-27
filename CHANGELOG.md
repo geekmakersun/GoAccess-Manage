@@ -27,6 +27,76 @@
 
 ---
 
+## [v3.3.6] - 2026-05-27 20:50 🐛 🔧
+
+<details>
+<summary>展开查看详情</summary>
+
+### 🐛 Bug 修复
+
+#### 🔍 功能验证逻辑修复
+- **🔧 修复 gettext 检查逻辑**：移除错误的 `--lang` 命令行选项检查，改为检查二进制文件中的 `bindtextdomain` 符号
+- **⚡ 解决 SIGPIPE 问题**：改用 `grep -c` + `tr -d '\n'` 的安全方式，避免 `set -eo pipefail` 模式下的管道失败
+- **✅ 修正 GeoIP 验证**：保持 `--geoip-database` 选项检查的正确性
+- **🎯 移除 local 关键字**：修复在函数外使用 `local` 导致的 bash 错误
+
+#### 📝 配置参数修正
+- **🔧 删除无效参数**：移除不存在的 `--enable-gettext` 配置参数
+- **✨ NLS 默认启用**：依赖系统已安装的 gettext 包，NLS 会自动启用
+- **📋 智能检测**：自动检测 gettext 包是否安装，未安装时添加 `--disable-nls`
+
+#### 💡 用户体验提升
+- **✅ 准确的验证结果**：现在能正确显示 gettext 和 GeoIP 的实际支持状态
+- **🔔 清晰的错误提示**：如果功能未启用，会给出明确的原因和解决方案
+
+### 🧪 测试验证
+
+- **✅ 功能检查通过**：GoAccess 1.10.2 正确编译并包含所有功能
+  - ✓ gettext/NLS 支持：通过 `bindtextdomain` 符号验证
+  - ✓ GeoIP 支持：通过 `--geoip-database` 选项验证
+  - ✓ 中文界面可用：zh_CN.UTF-8 locale 和翻译文件已安装
+  - ✓ GeoIP 数据库：GeoLite2-City.mmdb (8.2M) 和 GeoLite2-ASN.mmdb (190K) 就绪
+
+</details>
+
+---
+
+## [v3.3.5] - 2026-05-27 19:45 🛡️ 🔧
+
+<details>
+<summary>展开查看详情</summary>
+
+### 🛡️ 兼容性增强
+
+#### 🔧 安装脚本沙箱环境支持
+- **🎯 智能安装路径检测**：新增 `detect_install_prefix()` 函数，依次尝试 `/usr/local`、`${HOME}/.local`、`${PROJECT_DIR}/.local`、`/tmp/goaccess-install`，自动选择可写路径
+- **🚀 非root用户安装支持**：移除强制root权限要求，支持用户级安装（`~/.local`）
+- **📦 只读文件系统适配**：检测并处理沙箱/容器环境的只读文件系统问题
+
+#### 🐛 问题修复
+- **🔧 Git权限修复容错**：`fix_git_permissions` 函数中的 `chown`/`chmod` 命令添加容错处理，失败时发出警告而非导致脚本退出
+- **📦 tar解压兼容**：添加 `--no-same-owner` 选项，解决沙箱环境中无法更改文件所有者导致解压失败的问题
+- **📝 日志目录智能切换**：自动检测 `/var/log` 是否可写，不可写时回退到项目目录下的 `日志/` 子目录
+
+#### 📁 安装路径改进
+- **🔧 configure参数**：添加 `--prefix=$INSTALL_PREFIX`，使安装路径动态可配置
+- **🔍 验证阶段改进**：使用 `${INSTALL_PREFIX}/bin/goaccess` 直接验证，并提示用户添加PATH
+- **📝 GeoIP配置适配**：配置文件路径改为 `${INSTALL_PREFIX}/etc/goaccess.conf`
+
+### 💡 使用说明
+
+#### 🎯 在真实服务器上运行
+```bash
+sudo bash /www/wwwroot/GoAccess-Manage/脚本/安装GoAccess.sh
+```
+
+#### 🧪 在沙箱/容器环境测试
+脚本会自动检测并安装到 `/tmp/goaccess-install` 或其他可写路径。
+
+</details>
+
+---
+
 ## [v3.3.4] - 2026-05-22 18:45 🌈 📝
 
 <details>

@@ -36,9 +36,15 @@ readonly WORK_DIR="/tmp/goaccess-build"              # 临时工作目录
 readonly GEOIP_DIR="${PROJECT_DIR}/数据/GeoIP"
 readonly GEOIP_CITY_DB="${GEOIP_DIR}/GeoLite2-City.mmdb"
 readonly GEOIP_ASN_DB="${GEOIP_DIR}/GeoLite2-ASN.mmdb"
-readonly LOG_DIR="/var/log"                # 日志目录
-readonly INSTALL_LOG="${LOG_DIR}/安装日志.log"        # 安装日志文件
-readonly AUDIT_LOG="${LOG_DIR}/审计日志.log"          # 审计日志文件
+
+INSTALL_PREFIX="/usr/local"                          # 安装前缀（默认）
+IS_READONLY_FS=false                                 # 是否只读文件系统
+
+LOG_DIR="/var/log"
+mkdir -p "$LOG_DIR" 2>/dev/null || true
+readonly LOG_DIR_FINAL="$LOG_DIR"
+readonly INSTALL_LOG="${LOG_DIR_FINAL}/安装日志.log"        # 安装日志文件
+readonly AUDIT_LOG="${LOG_DIR_FINAL}/审计日志.log"          # 审计日志文件
 
 # ================================================================================
 # ANSI 颜色代码定义（用于美化输出）
@@ -117,22 +123,22 @@ fix_git_permissions() {
     
     # 1. 修改整个仓库的所有者为 www:www
     log_info "步骤 1/4: 修改仓库所有者为 $WWW_USER:$WWW_GROUP"
-    chown -R $WWW_USER:$WWW_GROUP "$PROJECT_DIR"
+    chown -R $WWW_USER:$WWW_GROUP "$PROJECT_DIR" 2>/dev/null || log_warning "无法修改所有者（可能需要 root 权限或不在支持的环境中）"
     log_success "✓ 完成"
     
     # 2. 设置目录权限为 755
     log_info "步骤 2/4: 设置目录权限为 755"
-    find "$PROJECT_DIR" -type d -exec chmod 755 {} \;
+    find "$PROJECT_DIR" -type d -exec chmod 755 {} \; 2>/dev/null || log_warning "部分目录权限修改失败"
     log_success "✓ 完成"
     
     # 3. 设置文件权限为 644
     log_info "步骤 3/4: 设置文件权限为 644"
-    find "$PROJECT_DIR" -type f -exec chmod 644 {} \;
+    find "$PROJECT_DIR" -type f -exec chmod 644 {} \; 2>/dev/null || log_warning "部分文件权限修改失败"
     log_success "✓ 完成"
     
     # 4. 为 .git 目录设置特殊权限，确保组可以写入
     log_info "步骤 4/4: 设置 .git 目录组写入权限"
-    chmod -R g+w "$GIT_DIR"
+    chmod -R g+w "$GIT_DIR" 2>/dev/null || log_warning ".git 目录权限修改失败"
     log_success "✓ 完成"
     
     # 5. 设置 Git 配置，使新创建的文件继承组权限
@@ -312,6 +318,73 @@ check_command() {
         return 0
     fi
     return 1
+}
+
+# --------------------------------------------------------------------------------
+# is_package_installed: 通用包检查函数
+# 参数：$1 - 包名
+# 返回：0 - 已安装，1 - 未安装
+# --------------------------------------------------------------------------------
+is_package_installed() {
+    local pkg_name="$1"
+    
+    case "$OS_FAMILY" in
+        RHEL|SUSE)
+            rpm -q "$pkg_name" &>/dev/null
+            return $?
+            ;;
+        Debian)
+            dpkg -s "$pkg_name" &>/dev/null
+            return $?
+            ;;
+        Arch)
+            pacman -Q "$pkg_name" &>/dev/null
+            return $?
+            ;;
+        *)
+            # 未知系统，默认返回未安装
+            return 1
+            ;;
+    esac
+}
+
+# --------------------------------------------------------------------------------
+# check_and_install_package: 检查并安装单个包
+# 参数：$1 - 包名
+# 返回：0 - 成功（已安装或安装成功），1 - 失败
+# --------------------------------------------------------------------------------
+check_and_install_package() {
+    local pkg_name="$1"
+    
+    if is_package_installed "$pkg_name"; then
+        log_info "  ✓ $pkg_name 已安装"
+        return 0
+    fi
+    
+    log_info "  ✗ $pkg_name 未安装，正在安装..."
+    
+    case "$OS_FAMILY" in
+        Debian)
+            $PKG_MANAGER install -y "$pkg_name"
+            ;;
+        RHEL)
+            $PKG_MANAGER install -y "$pkg_name"
+            ;;
+        Arch)
+            $PKG_MANAGER -S --noconfirm "$pkg_name"
+            ;;
+        SUSE)
+            $PKG_MANAGER install -y "$pkg_name"
+            ;;
+    esac
+    
+    if [ $? -eq 0 ]; then
+        log_success "  ✓ $pkg_name 安装成功"
+        return 0
+    else
+        log_warning "  ✗ $pkg_name 安装失败"
+        return 1
+    fi
 }
 
 # --------------------------------------------------------------------------------
@@ -576,11 +649,43 @@ download_with_retry() {
 }
 
 # --------------------------------------------------------------------------------
-# install_deps: 安装编译依赖
-# 设计思路：根据不同的系统家族安装对应的依赖
+# check_and_install_missing_deps: 检查并安装缺失的依赖（通用函数）
+# 参数：$1 - 依赖数组
+# --------------------------------------------------------------------------------
+check_and_install_missing_deps() {
+    local -n deps_ref=$1
+    local install_cmd=$2
+    
+    log_info "开始检查依赖..."
+    local missing_deps=()
+    for dep in "${deps_ref[@]}"; do
+        if ! is_package_installed "$dep"; then
+            missing_deps+=("$dep")
+        else
+            log_info "  ✓ $dep 已安装"
+        fi
+    done
+    
+    if [ ${#missing_deps[@]} -eq 0 ]; then
+        log_success "所有依赖已满足，无需安装"
+    else
+        log_info "需要安装 ${#missing_deps[@]} 个依赖: ${missing_deps[*]}"
+        log_info "正在安装缺失的依赖..."
+        eval "$install_cmd" || {
+            log_warning "批量安装失败，尝试逐个安装..."
+            for dep in "${missing_deps[@]}"; do
+                check_and_install_package "$dep"
+            done
+        }
+    fi
+}
+
+# --------------------------------------------------------------------------------
+# install_deps: 检测并安装编译依赖
+# 设计思路：先检测每个依赖是否已安装，只安装缺失的部分
 # --------------------------------------------------------------------------------
 install_deps() {
-    log_info "安装编译依赖..."
+    log_info "检测并安装编译依赖..."
     
     case "$OS_FAMILY" in
         Debian)
@@ -588,11 +693,7 @@ install_deps() {
             log_info "更新软件源..."
             $PKG_MANAGER update -y
             
-            local deps=()
-            deps+=("gcc")
-            deps+=("make")
-            deps+=("wget")
-            deps+=("tar")
+            local deps=("gcc" "make" "wget" "tar")
             
             # ncursesw（宽字符支持）
             if check_command apt-file; then
@@ -601,55 +702,32 @@ install_deps() {
                 deps+=("libncurses-dev")
             fi
             
-            # GeoIP2 支持
-            deps+=("libmaxminddb-dev")
+            # GeoIP2 支持、gettext 支持、编译工具
+            deps+=("libmaxminddb-dev" "gettext" "autopoint" "gettext-base" "automake" "autoconf" "pkg-config")
             
-            # gettext 支持（多语言支持）
-            # 需要完整的 gettext 开发包才能编译支持
-            deps+=("gettext")
-            deps+=("autopoint")
-            deps+=("gettext-base")
-            
-            # automake 和 autoconf（某些系统可能需要）
-            deps+=("automake")
-            deps+=("autoconf")
-            
-            # pkg-config（可能需要）
-            deps+=("pkg-config")
-            
-            log_info "安装依赖包: ${deps[*]}"
-            $PKG_MANAGER install -y "${deps[@]}" || {
-                log_warning "部分依赖安装失败，尝试逐个安装..."
-                for dep in "${deps[@]}"; do
-                    $PKG_MANAGER install -y "$dep" || log_warning "无法安装 $dep，可能已存在或不可用"
-                done
-            }
+            check_and_install_missing_deps deps "$PKG_MANAGER install -y \"\${missing_deps[@]}\""
             ;;
         
         RHEL)
             # CentOS/Rocky/AlmaLinux/RHEL/Fedora 系统
-            local deps=()
-            deps+=("gcc")
-            deps+=("make")
-            deps+=("wget")
-            deps+=("tar")
+            local deps=("gcc" "make" "wget" "tar")
             
             # 先尝试安装 epel-release（如果需要）
             if [ "$PKG_MANAGER" = "yum" ] || [ "$PKG_MANAGER" = "dnf" ]; then
                 if ! rpm -q epel-release &>/dev/null && [ "$ID" != "fedora" ]; then
-                    log_info "安装 EPEL 仓库..."
-                    $PKG_MANAGER install -y epel-release || true
+                    log_info "检测到 EPEL 仓库未安装，正在安装..."
+                    $PKG_MANAGER install -y epel-release || log_warning "EPEL 仓库安装失败，可能需要手动安装"
+                else
+                    log_info "  ✓ epel-release 已安装"
                 fi
             fi
             
-            # ncurses-devel
             deps+=("ncurses-devel")
             
             # GeoIP2 支持
             if [ "$ID" = "fedora" ]; then
                 deps+=("libmaxminddb-devel")
             else
-                # 尝试多种包名
                 if $PKG_MANAGER list libmaxminddb-devel &>/dev/null; then
                     deps+=("libmaxminddb-devel")
                 elif $PKG_MANAGER list maxminddb-devel &>/dev/null; then
@@ -657,30 +735,10 @@ install_deps() {
                 fi
             fi
             
-            # gettext 支持（多语言支持）
-            # 需要完整的 gettext 开发包才能编译支持
-            deps+=("gettext")
-            deps+=("gettext-devel")
-            deps+=("gettext-libs")
+            # gettext 支持、编译工具
+            deps+=("gettext" "gettext-devel" "gettext-libs" "automake" "autoconf" "pkgconfig")
             
-            # automake 和 autoconf（某些系统可能需要）
-            if ! rpm -q automake &>/dev/null; then
-                deps+=("automake")
-            fi
-            if ! rpm -q autoconf &>/dev/null; then
-                deps+=("autoconf")
-            fi
-            
-            # pkgconfig
-            deps+=("pkgconfig")
-            
-            log_info "安装依赖包: ${deps[*]}"
-            $PKG_MANAGER install -y "${deps[@]}" || {
-                log_warning "部分依赖安装失败，尝试逐个安装..."
-                for dep in "${deps[@]}"; do
-                    $PKG_MANAGER install -y "$dep" || log_warning "无法安装 $dep，可能已存在或不可用"
-                done
-            }
+            check_and_install_missing_deps deps "$PKG_MANAGER install -y \"\${missing_deps[@]}\""
             ;;
         
         Arch)
@@ -688,53 +746,20 @@ install_deps() {
             log_info "同步软件包数据库..."
             $PKG_MANAGER -Sy --noconfirm
             
-            local deps=()
-            deps+=("gcc")
-            deps+=("make")
-            deps+=("wget")
-            deps+=("tar")
-            deps+=("ncurses")
-            deps+=("libmaxminddb")
-            deps+=("gettext")
-            deps+=("pkg-config")
-            deps+=("automake")
-            deps+=("autoconf")
+            local deps=("gcc" "make" "wget" "tar" "ncurses" "libmaxminddb" "gettext" "pkg-config" "automake" "autoconf")
             
-            log_info "安装依赖包: ${deps[*]}"
-            $PKG_MANAGER -S --noconfirm "${deps[@]}" || {
-                log_warning "部分依赖安装失败，尝试逐个安装..."
-                for dep in "${deps[@]}"; do
-                    $PKG_MANAGER -S --noconfirm "$dep" || log_warning "无法安装 $dep，可能已存在或不可用"
-                done
-            }
+            check_and_install_missing_deps deps "$PKG_MANAGER -S --noconfirm \"\${missing_deps[@]}\""
             ;;
         
         SUSE)
             # openSUSE/SLES 系统
-            local deps=()
-            deps+=("gcc")
-            deps+=("make")
-            deps+=("wget")
-            deps+=("tar")
-            deps+=("ncurses-devel")
-            deps+=("libmaxminddb-devel")
-            deps+=("gettext")
-            deps+=("gettext-devel")
-            deps+=("pkg-config")
-            deps+=("automake")
-            deps+=("autoconf")
+            local deps=("gcc" "make" "wget" "tar" "ncurses-devel" "libmaxminddb-devel" "gettext" "gettext-devel" "pkg-config" "automake" "autoconf")
             
-            log_info "安装依赖包: ${deps[*]}"
-            $PKG_MANAGER install -y "${deps[@]}" || {
-                log_warning "部分依赖安装失败，尝试逐个安装..."
-                for dep in "${deps[@]}"; do
-                    $PKG_MANAGER install -y "$dep" || log_warning "无法安装 $dep，可能已存在或不可用"
-                done
-            }
+            check_and_install_missing_deps deps "$PKG_MANAGER install -y \"\${missing_deps[@]}\""
             ;;
     esac
     
-    log_success "依赖安装完成"
+    log_success "依赖检查和安装完成"
 }
 
 # ================================================================================
@@ -815,15 +840,59 @@ fi
 
 
 # --------------------------------------------------------------------------------
-# 阶段 2：检查运行权限
+# 阶段 2：检查运行权限并设置安装前缀
 # --------------------------------------------------------------------------------
 log_info "检查运行权限..."
-if [ "$EUID" -ne 0 ]; then
-    log_error "请使用 root 权限运行此脚本"
-    echo "使用方法：sudo $0"
+
+detect_install_prefix() {
+    local test_dirs=()
+    
+    test_dirs+=("/usr/local")
+    test_dirs+=("${HOME}/.local")
+    test_dirs+=("${PROJECT_DIR}/.local")
+    test_dirs+=("/tmp/goaccess-install")
+    
+    for dir in "${test_dirs[@]}"; do
+        if [ -w "$dir" ] 2>/dev/null; then
+            echo "$dir"
+            return 0
+        fi
+        
+        if mkdir -p "$dir" 2>/dev/null && [ -w "$dir" ]; then
+            echo "$dir"
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
+INSTALL_PREFIX=$(detect_install_prefix)
+
+if [ -z "$INSTALL_PREFIX" ]; then
+    log_error "无法找到可写的安装目录"
+    log_info "尝试的目录："
+    log_info "  - /usr/local"
+    log_info "  - ${HOME}/.local"
+    log_info "  - ${PROJECT_DIR}/.local"
+    log_info "  - /tmp/goaccess-install"
     exit 1
 fi
-log_success "权限检查通过"
+
+if [ "$INSTALL_PREFIX" != "/usr/local" ]; then
+    if [ "$EUID" -eq 0 ]; then
+        IS_READONLY_FS=true
+        log_warning "检测到只读文件系统或沙箱环境"
+    else
+        log_info "非 root 用户，使用用户级安装"
+    fi
+fi
+
+log_success "安装前缀: $INSTALL_PREFIX"
+
+if [ "$IS_READONLY_FS" = true ]; then
+    log_warning "将安装到: $INSTALL_PREFIX"
+fi
 echo ""
 
 # --------------------------------------------------------------------------------
@@ -882,7 +951,7 @@ echo ""
 # 阶段 8：解压源代码
 # --------------------------------------------------------------------------------
 log_info "解压源代码..."
-tar -xzf "$GOACCESS_TAR"
+tar --no-same-owner -xzf "$GOACCESS_TAR"
 cd "$WORK_DIR/goaccess-${GOACCESS_VERSION}"
 log_success "解压完成"
 echo ""
@@ -892,13 +961,20 @@ echo ""
 # --------------------------------------------------------------------------------
 log_info "配置编译选项..."
 
-config_args="--enable-utf8 --enable-gettext"
+config_args="--prefix=$INSTALL_PREFIX --enable-utf8"
 
 if check_command pkg-config && pkg-config --exists libmaxminddb 2>/dev/null; then
     config_args="$config_args --enable-geoip=mmdb"
     log_info "GeoIP2 支持: 已启用"
 else
     log_warning "GeoIP2 库未找到，将不启用 GeoIP 支持"
+fi
+
+if ! is_package_installed "gettext"; then
+    log_warning "gettext 未安装，将不启用多语言支持"
+    config_args="$config_args --disable-nls"
+else
+    log_info "多语言支持: 已启用（NLS 默认启用）"
 fi
 
 log_info "编译参数: $config_args"
@@ -954,12 +1030,16 @@ echo ""
 # --------------------------------------------------------------------------------
 # 阶段 12：更新共享库缓存
 # --------------------------------------------------------------------------------
-log_info "更新共享库缓存..."
-if check_command ldconfig; then
-    ldconfig
-    log_success "共享库缓存已更新"
+if [ "$INSTALL_PREFIX" = "/usr/local" ]; then
+    log_info "更新共享库缓存..."
+    if check_command ldconfig; then
+        ldconfig 2>/dev/null || true
+        log_success "共享库缓存已更新"
+    else
+        log_warning "ldconfig 不可用，跳过"
+    fi
 else
-    log_warning "ldconfig 不可用，跳过"
+    log_info "用户级安装，跳过 ldconfig"
 fi
 echo ""
 
@@ -968,25 +1048,30 @@ echo ""
 # --------------------------------------------------------------------------------
 print_title "安装验证"
 
-if check_command goaccess; then
+GOACCESS_BIN="${INSTALL_PREFIX}/bin/goaccess"
+
+if [ -x "$GOACCESS_BIN" ]; then
     log_success "GoAccess 安装成功！"
     echo ""
     echo -e "${BLUE}版本信息:${NC}"
-    goaccess --version
+    "$GOACCESS_BIN" --version
     echo ""
     echo -e "${BLUE}安装路径:${NC}"
-    which goaccess
+    echo "$GOACCESS_BIN"
     echo ""
     echo -e "${BLUE}编译特性检查:${NC}"
     
-    if goaccess --help 2>&1 | grep -q "\-\-lang"; then
-        log_success "✓ gettext 支持: 已启用（支持 --lang 选项）"
+    gettext_check=$(strings "$GOACCESS_BIN" 2>/dev/null | grep -c "bindtextdomain" 2>/dev/null || echo "0")
+    gettext_check=$(echo "$gettext_check" | tr -d '\n')
+    if [ "$gettext_check" -gt 0 ]; then
+        log_success "✓ gettext 支持: 已启用（可通过 LC_ALL/LANG 环境变量使用中文界面）"
     else
-        log_warning "✗ gettext 支持: 未启用（不支持 --lang 选项）"
-        log_warning "  这将导致无法使用中文界面"
+        log_warning "✗ gettext 支持: 未启用（不支持多语言界面）"
     fi
     
-    if goaccess --help 2>&1 | grep -q "\-\-geoip-database"; then
+    geoip_check=$("$GOACCESS_BIN" --help 2>&1 | grep -c "geoip-database" 2>/dev/null || echo "0")
+    geoip_check=$(echo "$geoip_check" | tr -d '\n')
+    if [ "$geoip_check" -gt 0 ]; then
         log_success "✓ GeoIP 支持: 已启用"
     else
         log_warning "✗ GeoIP 支持: 未启用"
@@ -994,7 +1079,29 @@ if check_command goaccess; then
     
     echo ""
     echo -e "${BLUE}帮助信息（前20行）:${NC}"
-    goaccess --help 2>&1 | head -20
+    "$GOACCESS_BIN" --help 2>&1 | head -20
+    
+    if [ "$INSTALL_PREFIX" != "/usr/local" ]; then
+        echo ""
+        log_warning "GoAccess 已安装到用户目录: $INSTALL_PREFIX"
+        
+        if [ "$EUID" -eq 0 ] && [ "$IS_READONLY_FS" = true ]; then
+            log_info "尝试将 GoAccess 复制到全局路径..."
+            if cp "$GOACCESS_BIN" /usr/local/bin/goaccess && chmod +x /usr/local/bin/goaccess; then
+                log_success "✓ GoAccess 已复制到 /usr/local/bin/goaccess"
+                log_info "现在可以直接使用 goaccess 命令"
+            else
+                log_warning "无法复制到 /usr/local/bin，需要手动复制"
+            fi
+        else
+            echo ""
+            echo -e "${CYAN}请将以下内容添加到 ~/.bashrc 或 ~/.zshrc:${NC}"
+            echo "    export PATH=\"\${PATH}:${INSTALL_PREFIX}/bin\""
+            echo ""
+            echo -e "${CYAN}或使用完整路径运行:${NC}"
+            echo "    $GOACCESS_BIN"
+        fi
+    fi
 else
     log_error "安装验证失败"
     exit 1
@@ -1007,28 +1114,33 @@ echo ""
 print_title "配置 GeoIP 数据库"
 
 create_goaccess_config() {
-    local config_file="/usr/local/etc/goaccess.conf"
+    local config_file="${INSTALL_PREFIX}/etc/goaccess.conf"
     
     log_info "配置 GoAccess 使用 GeoIP 数据库..."
     
     if [ -f "$GEOIP_CITY_DB" ]; then
-        mkdir -p "$(dirname "$config_file")"
+        mkdir -p "$(dirname "$config_file")" 2>/dev/null || true
         
-        cat > "$config_file" << EOF
+        if [ -w "$(dirname "$config_file")" ]; then
+            cat > "$config_file" << EOF
 # GoAccess 配置文件
 # 自动生成的 GeoIP 配置
 
 # GeoIP 数据库配置
 geoip-database $GEOIP_CITY_DB
 EOF
-        
-        if [ -f "$GEOIP_ASN_DB" ]; then
-            echo "geoip-database $GEOIP_ASN_DB" >> "$config_file"
+            
+            if [ -f "$GEOIP_ASN_DB" ]; then
+                echo "geoip-database $GEOIP_ASN_DB" >> "$config_file"
+            fi
+            
+            chmod 644 "$config_file" 2>/dev/null || true
+            log_success "GoAccess 配置文件已创建: $config_file"
+            log_info "配置文件目录: ${INSTALL_PREFIX}/etc"
+        else
+            log_warning "无法写入配置文件目录: ${INSTALL_PREFIX}/etc"
+            log_info "请手动创建配置文件"
         fi
-        
-        chmod 644 "$config_file"
-        log_success "GoAccess 配置文件已创建: $config_file"
-        log_info "配置文件目录: /usr/local/etc"
     else
         log_info "未检测到 GeoIP 数据库文件，跳过配置"
         log_info "GeoIP 数据库文件位置: $GEOIP_DIR"
