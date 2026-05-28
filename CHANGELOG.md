@@ -27,6 +27,49 @@
 
 ---
 
+## [v3.4.8] - 2026-05-28 22:35 🎨 📝
+
+<details>
+<summary>展开查看详情</summary>
+
+### 🎨 徽标优化
+
+#### 📖 README.md 精简徽标
+- **✨ 保留有价值的徽标**：访客数量、Stars、Last Commit、Code Size
+- **🗑️ 移除重复信息**：移除Forks、Watchers、Issues、PRs、Language（GitHub首页可直接查看）
+- **🎯 更加简洁**：让README更清爽，信息更聚焦
+
+### 💡 设计说明
+- **去重优化**：避免与GitHub首页重复的信息
+- **重点突出**：保留真正有价值的项目指标
+- **视觉简洁**：减少徽标数量，提升可读性
+
+</details>
+
+---
+
+## [v3.4.7] - 2026-05-28 22:34 ✨ 🎨
+
+<details>
+<summary>展开查看详情</summary>
+
+### ✨ 新增功能
+
+#### 📖 README.md 增加更多徽标
+- **✨ 新增GitHub相关徽标**：增加了Stars、Forks、Watchers徽标
+- **✨ 新增项目状态徽标**：增加了Issues、Pull Requests徽标
+- **✨ 新增项目信息徽标**：增加了Last Commit、Language、Code Size徽标
+- **🎨 丰富展示**：让项目信息更丰富，看起来更专业
+
+### 💡 设计说明
+- **信息丰富**：展示更多项目关键信息
+- **专业美观**：使用统一的flat-square风格
+- **保持居中**：所有徽标仍然在居中布局中
+
+</details>
+
+---
+
 ## [v3.4.6] - 2026-05-28 22:32 🔄 📊
 
 <details>
