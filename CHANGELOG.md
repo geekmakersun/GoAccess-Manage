@@ -27,6 +27,41 @@
 
 ---
 
+## [v3.5.5] - 2026-05-28 23:30 📝 🎨
+
+<details>
+<summary>展开查看详情</summary>
+
+### 📝 文档更新
+- 恢复 README.md 中所有删除的徽标
+- 包括：访客数量、GitHub Stars、Forks、Contributors、Issues、Last Commit、Code Size、Language、Platform、Shell 徽标
+
+### 🎨 样式更新
+- 保持使用徽标展示版本和最后更新时间
+- 丰富 README.md 展示内容，更加专业美观
+
+</details>
+
+---
+
+## [v3.5.4] - 2026-05-28 23:27 📝 🎨
+
+<details>
+<summary>展开查看详情</summary>
+
+### 📝 文档更新
+- 恢复 README.md 使用徽标显示版本信息
+- 更新"修改更新日志，并提交代码"命令中的步骤1.5
+- 步骤1.5说明改为修改徽标中的内容
+- 说明日期时间格式为 YYYY.MM.DD%20HH:MM（空格用 %20 代替）
+
+### 🎨 样式更新
+- 保持使用徽标展示版本和最后更新时间
+
+</details>
+
+---
+
 ## [v3.5.3] - 2026-05-28 23:25 📝 🔧
 
 <details>
