@@ -32,7 +32,7 @@
 ## 📁 目录结构
 
 ```
-GoAccess-Manage/                    # 🎯 项目根目录
+/home/www/GoAccess-Manage/          # 🎯 项目根目录
 ├── README.md                    # 📖 主文档
 ├── CHANGELOG.md                 # 📝 更新日志
 ├── LICENSE                      # 📜 许可证文件
@@ -62,17 +62,25 @@ GoAccess-Manage/                    # 🎯 项目根目录
         ├── GeoLite2-ASN.mmdb    # ASN 数据库
         └── GeoIP.version        # 版本信息
 
-/www/wwwroot/
+/var/www/
 └── 您的网站/                     # 🌐 各站点目录
     └── site-log.html            # 📊 访问报告
 ```
 
 ## 🚀 快速开始
 
+### 0. 拉取项目
+
+```bash
+cd /home/www
+git clone https://github.com/geekmakersun/GoAccess-Manage.git GoAccess-Manage
+cd GoAccess-Manage
+```
+
 ### 1. 安装 GoAccess
 
 ```bash
-cd /www/wwwroot/GoAccess-Manage
+cd /home/www/GoAccess-Manage
 sudo ./脚本/安装GoAccess.sh
 ```
 
@@ -90,7 +98,7 @@ sudo ./脚本/安装GoAccess.sh --force
 在 **配置/站点配置** 目录中创建配置文件：
 
 ```bash
-cd /www/wwwroot/GoAccess-Manage/配置/站点配置
+cd /home/www/GoAccess-Manage/配置/站点配置
 cp ../配置模板.conf 我的网站.conf
 nano 我的网站.conf
 ```
@@ -98,7 +106,7 @@ nano 我的网站.conf
 ### 3. 生成报告
 
 ```bash
-cd /www/wwwroot/GoAccess-Manage
+cd /home/www/GoAccess-Manage
 # 推荐以 www 用户运行（与网站运行身份一致，避免权限问题）
 sudo -su www ./脚本/分析所有站点.sh
 ```
@@ -114,10 +122,10 @@ sudo -su www ./脚本/分析所有站点.sh
 
 ```bash
 # 每天凌晨 2 点自动分析所有站点（以 www 用户运行）
-0 2 * * * cd /www/wwwroot/GoAccess-Manage && sudo -su www ./脚本/分析所有站点.sh
+0 2 * * * cd /home/www/GoAccess-Manage && sudo -su www ./脚本/分析所有站点.sh
 
 # 每月 1 号自动更新 GeoIP 数据库（需要 root）
-0 0 1 * * cd /www/wwwroot/GoAccess-Manage && sudo ./脚本/更新GeoLite2.sh
+0 0 1 * * cd /home/www/GoAccess-Manage && sudo ./脚本/更新GeoLite2.sh
 ```
 
 ## ⚠️ 重要：用户权限说明
