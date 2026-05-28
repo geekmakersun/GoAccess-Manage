@@ -2,8 +2,8 @@
 
 # GoAccess 多站点管理系统
 
-![Version](https://img.shields.io/badge/version-v3.5.5-blue?style=flat-square)
-![Last Update](https://img.shields.io/badge/last%20update-2026.05.28%2023:30-orange?style=flat-square)
+![Version](https://img.shields.io/badge/version-v3.5.6-blue?style=flat-square)
+![Last Update](https://img.shields.io/badge/last%20update-2026.05.28%2023:33-orange?style=flat-square)
 ![访客数量](https://komarev.com/ghpvc/?username=geekmakersun&repo=GoAccess-Manage&style=flat-square&color=blueviolet)
 [![GitHub Stars](https://img.shields.io/github/stars/geekmakersun/GoAccess-Manage?style=flat-square)](https://github.com/geekmakersun/GoAccess-Manage/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/geekmakersun/GoAccess-Manage?style=flat-square)](https://github.com/geekmakersun/GoAccess-Manage/network/members)

@@ -27,6 +27,21 @@
 
 ---
 
+## [v3.5.6] - 2026-05-28 23:33 📝
+
+<details>
+<summary>展开查看详情</summary>
+
+### 📝 文档更新
+- 更新"修改更新日志，并提交代码"命令中的步骤1.5
+- 说明只需要修改 Version 和 Last Update 这两个徽标
+- 列出所有其他不需要修改的徽标
+- 包括：访客数量、GitHub Stars、Forks、Contributors、Issues、Last Commit、Code Size、Language、Platform、Shell、License、GoAccess
+
+</details>
+
+---
+
 ## [v3.5.5] - 2026-05-28 23:30 📝 🎨
 
 <details>
