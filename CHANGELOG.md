@@ -27,6 +27,26 @@
 
 ---
 
+## [v3.4.5] - 2026-05-28 22:31 🔄 📊
+
+<details>
+<summary>展开查看详情</summary>
+
+### 🔄 访问统计工具更换
+
+#### 📖 README.md 访问统计工具再次更换
+- **🔄 更换为 countapi.xyz**：将访问统计从 visitor-badge.laobi.icu 更换为 countapi.xyz
+- **✨ 更好的去重**：countapi.xyz 支持基于访问者的去重统计
+- **🐛 修复问题**：解决同IP刷新不停增加的问题
+
+### 💡 设计说明
+- **更精确统计**：countapi.xyz 基于访问者会话去重，更准确
+- **简单易用**：API简洁，功能专注
+
+</details>
+
+---
+
 ## [v3.4.4] - 2026-05-28 22:28 🎨 📝
 
 <details>
