@@ -21,7 +21,7 @@ set -eo pipefail
 readonly SCRIPT_NAME="$(basename "$0")"
 readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 readonly PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-readonly LOG_DIR="/var/log"
+readonly LOG_DIR="/www/wwwlog/GoAccess-Manage"
 readonly AUDIT_CONFIG_LOG="${LOG_DIR}/审计配置日志.log"
 readonly AUDIT_RULES_FILE="/etc/audit/rules.d/goaccess-audit.rules"
 readonly SUDOERS_FILE="/etc/sudoers.d/goaccess-audit"
@@ -61,25 +61,48 @@ print_title() {
 log_info() {
     local msg="$1"
     echo -e "${YELLOW}[INFO] $msg${NC}"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $msg" >> "$AUDIT_CONFIG_LOG" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO]    $msg" >> "$AUDIT_CONFIG_LOG" 2>/dev/null || true
 }
 
 log_success() {
     local msg="$1"
     echo -e "${GREEN}[OK] $msg${NC}"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [OK] $msg" >> "$AUDIT_CONFIG_LOG" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [OK]      $msg" >> "$AUDIT_CONFIG_LOG" 2>/dev/null || true
 }
 
 log_error() {
     local msg="$1"
     echo -e "${RED}[ERROR] $msg${NC}" >&2
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $msg" >> "$AUDIT_CONFIG_LOG" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR]   $msg" >> "$AUDIT_CONFIG_LOG" 2>/dev/null || true
 }
 
 log_warning() {
     local msg="$1"
     echo -e "${YELLOW}[WARNING] $msg${NC}"
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [WARNING] $msg" >> "$AUDIT_CONFIG_LOG" 2>/dev/null || true
+}
+
+log_separator() {
+    local type="${1:-section}"
+    local separator=""
+    
+    case "$type" in
+        start)
+            separator="═══════════════════════════════════════════════════════════════"
+            echo -e "${BLUE}${separator}${NC}"
+            echo "$separator" >> "$AUDIT_CONFIG_LOG" 2>/dev/null || true
+            ;;
+        end)
+            separator="═══════════════════════════════════════════════════════════════"
+            echo -e "${BLUE}${separator}${NC}"
+            echo "$separator" >> "$AUDIT_CONFIG_LOG" 2>/dev/null || true
+            ;;
+        *)
+            separator="─────────────────────────────────────────────────────────────────"
+            echo -e "${BLUE}${separator}${NC}"
+            echo "$separator" >> "$AUDIT_CONFIG_LOG" 2>/dev/null || true
+            ;;
+    esac
 }
 
 check_command() {
@@ -559,9 +582,10 @@ main() {
         mkdir -p "$LOG_DIR"
     fi
     
-    echo "========================================" >> "$AUDIT_CONFIG_LOG" 2>/dev/null || true
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 开始配置审计系统" >> "$AUDIT_CONFIG_LOG" 2>/dev/null || true
-    echo "========================================" >> "$AUDIT_CONFIG_LOG" 2>/dev/null || true
+    # 记录脚本开始信息到日志文件
+    log_separator "start"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [START] 开始配置审计系统" >> "$AUDIT_CONFIG_LOG" 2>/dev/null || true
+    log_separator
     
     if [ "$install_mode" = true ]; then
         check_root
@@ -585,6 +609,11 @@ main() {
     if [ "$report_mode" = true ]; then
         generate_audit_report
     fi
+    
+    # 记录脚本结束信息到日志文件
+    log_separator
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [END]   审计系统配置完成" >> "$AUDIT_CONFIG_LOG" 2>/dev/null || true
+    log_separator "end"
     
     echo -e "${GREEN}操作完成！${NC}"
     echo ""

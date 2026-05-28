@@ -46,7 +46,7 @@ readonly GEOIP_VERSION_FILE="$GEOIP_DIR/GeoIP.version"
 if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]] || [[ "$OSTYPE" == "cygwin" ]]; then
     readonly LOG_DIR="$GEOIP_DIR/日志"
 else
-    readonly LOG_DIR="/var/log"
+    readonly LOG_DIR="/www/wwwlog/GoAccess-Manage"
 fi
 readonly UPDATE_LOG="${LOG_DIR}/GeoIP更新日志.log"
 readonly AUDIT_LOG="${LOG_DIR}/审计日志.log"
@@ -98,23 +98,48 @@ print_title() {
 log_info() {
     local msg="$1"
     echo -e "${YELLOW}[INFO] $msg${NC}"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $msg" >> "$UPDATE_LOG" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO]    $msg" >> "$UPDATE_LOG" 2>/dev/null || true
 }
 
 log_success() {
-    echo -e "${GREEN}[OK] $1${NC}"
+    local msg="$1"
+    echo -e "${GREEN}[OK] $msg${NC}"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [OK]      $msg" >> "$UPDATE_LOG" 2>/dev/null || true
 }
 
 log_error() {
     local msg="$1"
     echo -e "${RED}[ERROR] $msg${NC}" >&2
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $msg" >> "$UPDATE_LOG" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR]   $msg" >> "$UPDATE_LOG" 2>/dev/null || true
 }
 
 log_warning() {
     local msg="$1"
     echo -e "${YELLOW}[WARNING] $msg${NC}"
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [WARNING] $msg" >> "$UPDATE_LOG" 2>/dev/null || true
+}
+
+log_separator() {
+    local type="${1:-section}"
+    local separator=""
+    
+    case "$type" in
+        start)
+            separator="═══════════════════════════════════════════════════════════════"
+            echo -e "${BLUE}${separator}${NC}"
+            echo "$separator" >> "$UPDATE_LOG" 2>/dev/null || true
+            ;;
+        end)
+            separator="═══════════════════════════════════════════════════════════════"
+            echo -e "${BLUE}${separator}${NC}"
+            echo "$separator" >> "$UPDATE_LOG" 2>/dev/null || true
+            ;;
+        *)
+            separator="─────────────────────────────────────────────────────────────────"
+            echo -e "${BLUE}${separator}${NC}"
+            echo "$separator" >> "$UPDATE_LOG" 2>/dev/null || true
+            ;;
+    esac
 }
 
 check_command() {
@@ -597,9 +622,10 @@ if [ ! -d "$LOG_DIR" ]; then
     mkdir -p "$LOG_DIR"
 fi
 
-echo "========================================" >> "$UPDATE_LOG" 2>/dev/null || true
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] 开始更新 GeoIP 数据库" >> "$UPDATE_LOG" 2>/dev/null || true
-echo "========================================" >> "$UPDATE_LOG" 2>/dev/null || true
+# 记录脚本开始信息到日志文件
+log_separator "start"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] [START] 开始更新 GeoIP 数据库" >> "$UPDATE_LOG" 2>/dev/null || true
+log_separator
 
 log_audit_start "$@"
 
@@ -755,6 +781,12 @@ fi
 show_version_info
 
 log_audit "GEOIP_UPDATE_COMPLETE | VERSION=$LATEST_TAG | CITY=$UPDATE_CITY | ASN=$UPDATE_ASN | FORCE=$FORCE_UPDATE"
+
+# 记录脚本结束信息到日志文件
+log_separator
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] [END]   GeoIP 数据库更新完成" >> "$UPDATE_LOG" 2>/dev/null || true
+log_separator "end"
+
 log_audit_end 0
 
 echo ""

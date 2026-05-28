@@ -26,7 +26,7 @@ readonly WORK_DIR="/tmp/goaccess-build"
 readonly SITES_CONFIG_DIR="${PROJECT_DIR}/配置/站点配置"
 readonly GOACCESS_CONFIG_DIR="$PROJECT_DIR"
 
-readonly LOG_DIR_FINAL="/var/log"
+readonly LOG_DIR_FINAL="/www/wwwlog/GoAccess-Manage"
 readonly UNINSTALL_LOG="${LOG_DIR_FINAL}/卸载日志.log"
 readonly AUDIT_LOG="${LOG_DIR_FINAL}/审计日志.log"
 
@@ -73,19 +73,19 @@ print_title() {
 log_info() {
     local msg="$1"
     echo -e "${YELLOW}[INFO] $msg${NC}"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $msg" >> "$UNINSTALL_LOG" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO]    $msg" >> "$UNINSTALL_LOG" 2>/dev/null || true
 }
 
 log_success() {
     local msg="$1"
     echo -e "${GREEN}[OK] $msg${NC}"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [OK] $msg" >> "$UNINSTALL_LOG" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [OK]      $msg" >> "$UNINSTALL_LOG" 2>/dev/null || true
 }
 
 log_error() {
     local msg="$1"
     echo -e "${RED}[ERROR] $msg${NC}" >&2
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $msg" >> "$UNINSTALL_LOG" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR]   $msg" >> "$UNINSTALL_LOG" 2>/dev/null || true
 }
 
 log_warning() {
@@ -98,6 +98,29 @@ log_removed() {
     local msg="$1"
     echo -e "${RED}[REMOVED] $msg${NC}"
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [REMOVED] $msg" >> "$UNINSTALL_LOG" 2>/dev/null || true
+}
+
+log_separator() {
+    local type="${1:-section}"
+    local separator=""
+    
+    case "$type" in
+        start)
+            separator="═══════════════════════════════════════════════════════════════"
+            echo -e "${BLUE}${separator}${NC}"
+            echo "$separator" >> "$UNINSTALL_LOG" 2>/dev/null || true
+            ;;
+        end)
+            separator="═══════════════════════════════════════════════════════════════"
+            echo -e "${BLUE}${separator}${NC}"
+            echo "$separator" >> "$UNINSTALL_LOG" 2>/dev/null || true
+            ;;
+        *)
+            separator="─────────────────────────────────────────────────────────────────"
+            echo -e "${BLUE}${separator}${NC}"
+            echo "$separator" >> "$UNINSTALL_LOG" 2>/dev/null || true
+            ;;
+    esac
 }
 
 log_debug() {
@@ -1063,9 +1086,10 @@ main() {
         mkdir -p "$LOG_DIR_FINAL"
     fi
     
-    echo "========================================" >> "$UNINSTALL_LOG" 2>/dev/null || true
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 开始卸载 GoAccess" >> "$UNINSTALL_LOG" 2>/dev/null || true
-    echo "========================================" >> "$UNINSTALL_LOG" 2>/dev/null || true
+    # 记录脚本开始信息到日志文件
+    log_separator "start"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [START] 开始卸载 GoAccess" >> "$UNINSTALL_LOG" 2>/dev/null || true
+    log_separator
     
     log_step "脚本启动"
     log_debug "脚本目录: $SCRIPT_DIR"
@@ -1124,6 +1148,12 @@ main() {
     
     log_step "卸载流程完成"
     log_audit "UNINSTALL_COMPLETE"
+    
+    # 记录脚本结束信息到日志文件
+    log_separator
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [END]   卸载完成" >> "$UNINSTALL_LOG" 2>/dev/null || true
+    log_separator "end"
+    
     log_audit_end 0
     exit 0
 }

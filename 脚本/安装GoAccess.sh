@@ -40,7 +40,7 @@ readonly GEOIP_ASN_DB="${GEOIP_DIR}/GeoLite2-ASN.mmdb"
 INSTALL_PREFIX="/usr/local"                          # 安装前缀（默认）
 IS_READONLY_FS=false                                 # 是否只读文件系统
 
-LOG_DIR="/var/log"
+LOG_DIR="/www/wwwlog/GoAccess-Manage"
 mkdir -p "$LOG_DIR" 2>/dev/null || true
 readonly LOG_DIR_FINAL="$LOG_DIR"
 readonly INSTALL_LOG="${LOG_DIR_FINAL}/安装日志.log"        # 安装日志文件
@@ -274,7 +274,7 @@ print_title() {
 log_info() {
     local msg="$1"
     echo -e "${YELLOW}[INFO] $msg${NC}"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $msg" >> "$INSTALL_LOG" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO]    $msg" >> "$INSTALL_LOG" 2>/dev/null || true
 }
 
 # --------------------------------------------------------------------------------
@@ -284,7 +284,7 @@ log_info() {
 log_success() {
     local msg="$1"
     echo -e "${GREEN}[OK] $msg${NC}"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [OK] $msg" >> "$INSTALL_LOG" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [OK]      $msg" >> "$INSTALL_LOG" 2>/dev/null || true
 }
 
 # --------------------------------------------------------------------------------
@@ -294,7 +294,7 @@ log_success() {
 log_error() {
     local msg="$1"
     echo -e "${RED}[ERROR] $msg${NC}" >&2
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $msg" >> "$INSTALL_LOG" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR]   $msg" >> "$INSTALL_LOG" 2>/dev/null || true
 }
 
 # --------------------------------------------------------------------------------
@@ -305,6 +305,33 @@ log_warning() {
     local msg="$1"
     echo -e "${YELLOW}[WARNING] $msg${NC}"
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [WARNING] $msg" >> "$INSTALL_LOG" 2>/dev/null || true
+}
+
+# --------------------------------------------------------------------------------
+# log_separator: 打印日志分隔符
+# 参数：$1 - 分隔符类型（可选：start/end/section）
+# --------------------------------------------------------------------------------
+log_separator() {
+    local type="${1:-section}"
+    local separator=""
+    
+    case "$type" in
+        start)
+            separator="═══════════════════════════════════════════════════════════════"
+            echo -e "${BLUE}${separator}${NC}"
+            echo "$separator" >> "$INSTALL_LOG" 2>/dev/null || true
+            ;;
+        end)
+            separator="═══════════════════════════════════════════════════════════════"
+            echo -e "${BLUE}${separator}${NC}"
+            echo "$separator" >> "$INSTALL_LOG" 2>/dev/null || true
+            ;;
+        *)
+            separator="─────────────────────────────────────────────────────────────────"
+            echo -e "${BLUE}${separator}${NC}"
+            echo "$separator" >> "$INSTALL_LOG" 2>/dev/null || true
+            ;;
+    esac
 }
 
 # --------------------------------------------------------------------------------
@@ -768,13 +795,20 @@ install_deps() {
 
 print_title "GoAccess 编译安装脚本 v2.0"
 
+# 创建并配置日志目录
 if [ ! -d "$LOG_DIR" ]; then
+    log_info "创建日志目录: $LOG_DIR"
     mkdir -p "$LOG_DIR"
 fi
+# 设置日志目录权限（确保 www 用户可以访问和写入）
+chown -R www:www "$LOG_DIR" 2>/dev/null || true
+chmod 755 "$LOG_DIR" 2>/dev/null || true
+log_success "日志目录已配置: $LOG_DIR"
 
-echo "========================================" >> "$INSTALL_LOG" 2>/dev/null || true
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] 开始安装 GoAccess v${GOACCESS_VERSION}" >> "$INSTALL_LOG" 2>/dev/null || true
-echo "========================================" >> "$INSTALL_LOG" 2>/dev/null || true
+# 记录脚本开始信息到日志文件
+log_separator "start"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] [START] 开始安装 GoAccess v${GOACCESS_VERSION}" >> "$INSTALL_LOG" 2>/dev/null || true
+log_separator
 
 # 记录脚本开始执行的审计信息
 log_audit_start "$@"
@@ -1229,4 +1263,10 @@ echo ""
 
 # 记录安装完成的审计信息
 log_audit "INSTALL_COMPLETE | VERSION=$GOACCESS_VERSION"
+
+# 记录脚本结束信息到日志文件
+log_separator
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] [END]   GoAccess 安装完成" >> "$INSTALL_LOG" 2>/dev/null || true
+log_separator "end"
+
 log_audit_end 0

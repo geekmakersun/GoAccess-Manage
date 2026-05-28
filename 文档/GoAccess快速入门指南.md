@@ -237,7 +237,7 @@ goaccess access.log -o report.html --log-format=COMBINED
 **解析多个日志文件（含压缩文件）：**
 
 ```bash
-zcat -f /var/log/apache2/access.log* | goaccess -a -o report.html --log-format=COMBINED
+zcat -f /www/wwwlogs/access.log* | goaccess -a -o report.html --log-format=COMBINED
 ```
 
 ### 4.3 生成实时 HTML 报告
@@ -245,7 +245,7 @@ zcat -f /var/log/apache2/access.log* | goaccess -a -o report.html --log-format=C
 生成一份实时更新的 HTML 仪表板，数据通过 WebSocket 推送到浏览器：
 
 ```bash
-goaccess access.log -o /var/www/html/report.html --log-format=COMBINED --real-time-html
+goaccess access.log -o /www/wwwroot/html/report.html --log-format=COMBINED --real-time-html
 ```
 
 **重要说明：**
@@ -266,7 +266,7 @@ GoAccess 也支持从管道读取日志数据。**注意：管道模式下不会
 cat access.log | goaccess --log-format=COMBINED -
 
 # 实时追踪日志
-tail -f /var/log/apache2/access.log | goaccess --log-format=COMBINED -
+tail -f /www/wwwlogs/apache2/access.log | goaccess --log-format=COMBINED -
 ```
 
 ## 5. 常用命令参数速查
@@ -286,7 +286,7 @@ tail -f /var/log/apache2/access.log | goaccess --log-format=COMBINED -
 
 | 参数 | 说明 | 示例 |
 |------|------|------|
-| `-f` | 指定输入日志文件 | `-f /var/log/nginx/access.log` |
+| `-f` | 指定输入日志文件 | `-f /www/wwwlogs/nginx/access.log` |
 | `-o` | 指定输出文件 | `-o report.html` |
 | `-p` | 指定配置文件 | `-p /etc/goaccess.conf` |
 | `-` | 从标准输入读取 | `cat access.log \| goaccess -` |
@@ -371,10 +371,10 @@ services:
     ports:
       - "7890:7890"
     volumes:
-      - ./access.log:/var/log/access.log:ro
-      - ./report.html:/var/www/html/report.html
+      - ./access.log:/www/wwwlogs/access.log:ro
+      - ./report.html:/www/wwwroot/html/report.html
     command: >
-      -a -o /var/www/html/report.html
+      -a -o /www/wwwroot/html/report.html
       --log-format=COMBINED
       --real-time-html
       --ws-url=ws://localhost:7890
@@ -500,7 +500,7 @@ server {
 
     # HTML 报告文件
     location / {
-        root /var/www/goaccess;
+        root /www/wwwroot/goaccess;
         index report.html;
     }
 
@@ -522,8 +522,8 @@ server {
 ```bash
 # --addr 绑定本地（安全，不直接暴露端口）
 # --ws-url 告诉浏览器通过域名路径连接 WebSocket
-goaccess /var/log/nginx/access.log \
-  -o /var/www/goaccess/report.html \
+goaccess /www/wwwlogs/nginx/access.log \
+  -o /www/wwwroot/goaccess/report.html \
   --log-format=COMBINED \
   --real-time-html \
   --addr=127.0.0.1 \
@@ -547,7 +547,7 @@ goaccess /var/log/nginx/access.log \
 # 站点 A
 server {
     server_name stats-a.example.com;
-    root /var/www/goaccess/a;
+    root /www/wwwroot/goaccess/a;
 
     location / {
         index report.html;
@@ -566,7 +566,7 @@ server {
 # 站点 B
 server {
     server_name stats-b.example.com;
-    root /var/www/goaccess/b;
+    root /www/wwwroot/goaccess/b;
 
     location / {
         index report.html;
@@ -587,8 +587,8 @@ server {
 
 ```bash
 # 站点 A
-goaccess /var/log/site-a/access.log \
-  -o /var/www/goaccess/a/report.html \
+goaccess /www/wwwlogs/site-a/access.log \
+  -o /www/wwwroot/goaccess/a/report.html \
   --log-format=COMBINED \
   --real-time-html \
   --addr=127.0.0.1 --port=7890 \
@@ -596,8 +596,8 @@ goaccess /var/log/site-a/access.log \
   --daemonize
 
 # 站点 B
-goaccess /var/log/site-b/access.log \
-  -o /var/www/goaccess/b/report.html \
+goaccess /www/wwwlogs/site-b/access.log \
+  -o /www/wwwroot/goaccess/b/report.html \
   --log-format=COMBINED \
   --real-time-html \
   --addr=127.0.0.1 --port=7891 \
@@ -617,12 +617,13 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/goaccess /var/log/site-a/access.log \
-  -o /var/www/goaccess/a/report.html \
+ExecStart=/usr/local/bin/goaccess /www/wwwlogs/site-a/access.log \
+  -o /www/wwwroot/goaccess/a/report.html \
   --log-format=COMBINED \
   --real-time-html \
   --addr=127.0.0.1 --port=7890 \
-  --ws-url=ws://stats-a.example.com/ws
+  --ws-url=ws://stats-a.example.com/ws \
+  --daemonize
 Restart=on-failure
 RestartSec=5
 
@@ -670,7 +671,7 @@ GoAccess 启动时 `--ws-url` 使用 `wss://`：
 
 ```bash
 goaccess access.log \
-  -o /var/www/goaccess/report.html \
+  -o /www/wwwroot/goaccess/report.html \
   --real-time-html \
   --addr=127.0.0.1 --port=7890 \
   --ws-url=wss://stats.example.com/ws
@@ -682,7 +683,7 @@ goaccess access.log \
 
 ```bash
 goaccess access.log \
-  -o /var/www/goaccess/report.html \
+  -o /www/wwwroot/goaccess/report.html \
   --real-time-html \
   --addr=127.0.0.1 --port=7890 \
   --ssl-cert=/path/to/cert.pem \

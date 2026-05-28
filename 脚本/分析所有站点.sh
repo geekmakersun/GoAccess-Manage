@@ -27,7 +27,7 @@ readonly SCRIPT_NAME="$(basename "$0")"              # 脚本文件名
 readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)" # 脚本所在目录（绝对路径）
 readonly PROJECT_DIR="$(dirname "$SCRIPT_DIR")"      # 项目根目录（脚本目录的上级）
 readonly CONFIG_DIR="$PROJECT_DIR/配置/站点配置"     # 站点配置目录
-readonly LOG_DIR="$PROJECT_DIR/日志"           # 日志目录（放在项目目录下，确保 www 用户有权限写入）
+readonly LOG_DIR="/www/wwwlog/GoAccess-Manage"  # 日志目录（统一存放 GoAccess 项目的所有日志）
 readonly RUN_LOG="$LOG_DIR/分析运行日志.log"       # GoAccess运行日志文件
 readonly AUDIT_LOG="$LOG_DIR/审计日志.log"         # 审计日志文件
 
@@ -72,7 +72,7 @@ print_title() {
 log_info() {
     local msg="$1"
     echo -e "${YELLOW}[INFO] $msg${NC}"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $msg" >> "$RUN_LOG" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO]    $msg" >> "$RUN_LOG" 2>/dev/null || true
 }
 
 # --------------------------------------------------------------------------------
@@ -82,7 +82,7 @@ log_info() {
 log_success() {
     local msg="$1"
     echo -e "${GREEN}[OK] $msg${NC}"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [OK] $msg" >> "$RUN_LOG" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [OK]      $msg" >> "$RUN_LOG" 2>/dev/null || true
 }
 
 # --------------------------------------------------------------------------------
@@ -92,7 +92,7 @@ log_success() {
 log_error() {
     local msg="$1"
     echo -e "${RED}[ERROR] $msg${NC}" >&2
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $msg" >> "$RUN_LOG" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR]   $msg" >> "$RUN_LOG" 2>/dev/null || true
 }
 
 # --------------------------------------------------------------------------------
@@ -103,6 +103,33 @@ log_warning() {
     local msg="$1"
     echo -e "${YELLOW}[WARNING] $msg${NC}"
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [WARNING] $msg" >> "$RUN_LOG" 2>/dev/null || true
+}
+
+# --------------------------------------------------------------------------------
+# log_separator: 打印日志分隔符
+# 参数：$1 - 分隔符类型（可选：start/end/section）
+# --------------------------------------------------------------------------------
+log_separator() {
+    local type="${1:-section}"
+    local separator=""
+    
+    case "$type" in
+        start)
+            separator="═══════════════════════════════════════════════════════════════"
+            echo -e "${BLUE}${separator}${NC}"
+            echo "$separator" >> "$RUN_LOG" 2>/dev/null || true
+            ;;
+        end)
+            separator="═══════════════════════════════════════════════════════════════"
+            echo -e "${BLUE}${separator}${NC}"
+            echo "$separator" >> "$RUN_LOG" 2>/dev/null || true
+            ;;
+        *)
+            separator="─────────────────────────────────────────────────────────────────"
+            echo -e "${BLUE}${separator}${NC}"
+            echo "$separator" >> "$RUN_LOG" 2>/dev/null || true
+            ;;
+    esac
 }
 
 # --------------------------------------------------------------------------------
@@ -256,6 +283,12 @@ log_audit_start "$@"
 print_title "GoAccess 多站点分析脚本 v1.2"
 
 log_info "脚本目录: $SCRIPT_DIR"
+
+# 记录脚本开始信息到日志文件
+log_separator "start"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] [START] 开始分析站点" >> "$RUN_LOG" 2>/dev/null || true
+log_separator
+
 echo ""
 
 # --------------------------------------------------------------------------------
@@ -539,9 +572,18 @@ log_audit "STATISTICS | SUCCESS=$SUCCESS_COUNT | FAIL=$FAIL_COUNT | SKIP=$SKIP_C
 # 如果有失败的站点，退出码为 1（让脚本可以被检测到失败）
 if [ $FAIL_COUNT -gt 0 ]; then
     log_warning "有 $FAIL_COUNT 个站点分析失败，请检查配置文件"
+    # 记录脚本结束信息到日志文件
+    log_separator
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [END]   站点分析完成（有失败）" >> "$RUN_LOG" 2>/dev/null || true
+    log_separator "end"
     log_audit_end 1
     exit 1
 fi
+
+# 记录脚本结束信息到日志文件
+log_separator
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] [END]   站点分析完成" >> "$RUN_LOG" 2>/dev/null || true
+log_separator "end"
 
 log_audit_end 0
 exit 0

@@ -28,6 +28,41 @@
 ---
 
 ---
+## [v3.7.0] - 2026-05-29 📁 🔧 📝
+
+<details>
+<summary>展开查看详情</summary>
+
+### 📁 日志目录统一配置
+- **统一日志存储位置**：所有脚本的日志目录统一配置为 `/www/wwwlog/GoAccess-Manage/`
+- **创建并配置日志目录**：安装脚本会自动创建日志目录并设置正确权限
+- **涉及脚本更新**：
+  - [安装GoAccess.sh](file:///home/www/GoAccess-Manage/脚本/安装GoAccess.sh)
+  - [分析所有站点.sh](file:///home/www/GoAccess-Manage/脚本/分析所有站点.sh)
+  - [更新GeoLite2.sh](file:///home/www/GoAccess-Manage/脚本/更新GeoLite2.sh)
+  - [配置审计系统.sh](file:///home/www/GoAccess-Manage/脚本/配置审计系统.sh)
+  - [卸载GoAccess.sh](file:///home/www/GoAccess-Manage/脚本/卸载GoAccess.sh)
+
+### 🔧 日志格式优化
+- **新增日志分隔符函数**：`log_separator()` 函数，使日志更易于阅读
+- **对齐日志级别**：统一日志级别格式，INFO、OK、ERROR、WARNING 级别对齐显示
+- **脚本开始/结束标记**：在日志中明确标记脚本的开始和结束
+- **统一日志格式**：`[YYYY-MM-DD HH:MM:SS] [级别] 消息内容`
+
+### 📝 文档更新
+- **更新定时任务配置**：修正文档中的日志路径引用
+- **更新 README.md**：同步更新版本信息和最后更新时间
+- **更新使用说明**：确保所有文档中的路径引用正确
+- **检查结果**：所有路径配置已统一验证通过
+
+### 💡 设计说明
+- **集中管理**：所有 GoAccess 管理系统的日志集中存放在一个目录，便于维护和排查问题
+- **权限安全**：日志目录所有者为 `www:www`，权限 `755`，确保 Web 服务可以正常访问
+- **可读性提升**：优化的日志格式和分隔符使日志文件更易于阅读和分析
+
+</details>
+
+---
 ## [v3.6.1] - 2026-05-28 23:54 🎨
 
 <details>
