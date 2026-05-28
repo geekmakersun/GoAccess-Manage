@@ -1,6 +1,8 @@
+<div align="center">
+
 # GoAccess 多站点管理系统
 
-**版本：v3.4.1** | **最后更新：2026-05-28 22:16**
+**版本：v3.4.2** | **最后更新：2026-05-28 22:20**
 
 ## 📊 访问统计
 
@@ -11,6 +13,8 @@
 [![GoAccess](https://img.shields.io/badge/GoAccess-Latest-brightgreen.svg)](https://goaccess.io/)
 
 [📖 更新日志](CHANGELOG.md) | [📋 快速入门](文档/GoAccess快速入门指南.md) | [🌍 GeoIP说明](文档/GeoIP/使用说明.md)
+
+</div>
 
 ---
 
