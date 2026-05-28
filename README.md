@@ -2,9 +2,9 @@
 
 # GoAccess 多站点管理系统
 
-**版本：v3.4.5** | **最后更新：2026-05-28 22:31**
+**版本：v3.4.6** | **最后更新：2026-05-28 22:32**
 
-![访客数量](https://countapi.xyz/get/geekmakersun/GoAccess-Manage?svg=1)
+![访客数量](https://komarev.com/ghpvc/?username=geekmakersun&repo=GoAccess-Manage&style=flat-square&color=blueviolet)
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![GoAccess](https://img.shields.io/badge/GoAccess-Latest-brightgreen.svg)](https://goaccess.io/)
