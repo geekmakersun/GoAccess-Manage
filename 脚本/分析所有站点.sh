@@ -306,6 +306,18 @@ if [ ! -d "$LOG_DIR" ]; then
     log_info "创建日志目录: $LOG_DIR"
 fi
 
+if touch "$RUN_LOG" 2>/dev/null; then
+    chown www:www "$RUN_LOG" 2>/dev/null || true
+else
+    log_warning "无法创建运行日志文件: $RUN_LOG"
+fi
+
+if touch "$AUDIT_LOG" 2>/dev/null; then
+    chown www:www "$AUDIT_LOG" 2>/dev/null || true
+else
+    log_warning "无法创建审计日志文件: $AUDIT_LOG"
+fi
+
 # 检查运行用户（建议使用 www 用户运行，以匹配网站运行身份）
 # 说明：以 www 用户运行可确保生成的文件权限正确，避免网站无法访问报告
 if [ "$EUID" -eq 0 ]; then

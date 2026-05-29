@@ -1086,6 +1086,12 @@ main() {
         mkdir -p "$LOG_DIR_FINAL"
     fi
     
+    if touch "$UNINSTALL_LOG" 2>/dev/null; then
+        chown www:www "$UNINSTALL_LOG" 2>/dev/null || true
+    else
+        log_warning "无法创建卸载日志文件: $UNINSTALL_LOG"
+    fi
+    
     # 记录脚本开始信息到日志文件
     log_separator "start"
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [START] 开始卸载 GoAccess" >> "$UNINSTALL_LOG" 2>/dev/null || true

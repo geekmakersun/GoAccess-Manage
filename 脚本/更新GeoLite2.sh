@@ -622,6 +622,12 @@ if [ ! -d "$LOG_DIR" ]; then
     mkdir -p "$LOG_DIR"
 fi
 
+if touch "$UPDATE_LOG" 2>/dev/null; then
+    chown www:www "$UPDATE_LOG" 2>/dev/null || true
+else
+    log_warning "无法创建更新日志文件: $UPDATE_LOG"
+fi
+
 # 记录脚本开始信息到日志文件
 log_separator "start"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] [START] 开始更新 GeoIP 数据库" >> "$UPDATE_LOG" 2>/dev/null || true

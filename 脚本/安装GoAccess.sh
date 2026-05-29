@@ -800,10 +800,21 @@ if [ ! -d "$LOG_DIR" ]; then
     log_info "创建日志目录: $LOG_DIR"
     mkdir -p "$LOG_DIR"
 fi
-# 设置日志目录权限（确保 www 用户可以访问和写入）
 chown -R www:www "$LOG_DIR" 2>/dev/null || true
 chmod 755 "$LOG_DIR" 2>/dev/null || true
-log_success "日志目录已配置: $LOG_DIR"
+
+if touch "$INSTALL_LOG" 2>/dev/null; then
+    chown www:www "$INSTALL_LOG" 2>/dev/null || true
+    log_success "日志目录已配置: $LOG_DIR"
+else
+    log_warning "无法创建安装日志文件: $INSTALL_LOG"
+fi
+
+if touch "$AUDIT_LOG" 2>/dev/null; then
+    chown www:www "$AUDIT_LOG" 2>/dev/null || true
+else
+    log_warning "无法创建审计日志文件: $AUDIT_LOG"
+fi
 
 # 记录脚本开始信息到日志文件
 log_separator "start"

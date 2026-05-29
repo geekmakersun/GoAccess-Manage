@@ -582,6 +582,12 @@ main() {
         mkdir -p "$LOG_DIR"
     fi
     
+    if touch "$AUDIT_CONFIG_LOG" 2>/dev/null; then
+        chown www:www "$AUDIT_CONFIG_LOG" 2>/dev/null || true
+    else
+        log_warning "无法创建审计配置日志文件: $AUDIT_CONFIG_LOG"
+    fi
+    
     # 记录脚本开始信息到日志文件
     log_separator "start"
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [START] 开始配置审计系统" >> "$AUDIT_CONFIG_LOG" 2>/dev/null || true
