@@ -28,6 +28,37 @@
 ---
 
 ---
+## [v3.9.11] - 2026-05-31 23:10 🐛 🔧
+
+<details>
+<summary>展开查看详情</summary>
+
+### 🐛 Bug修复
+
+#### 🔧 修复 www 用户无法找到 GoAccess 命令的问题
+- **🐛 问题原因**：www 用户的 PATH 环境变量不包含 `/usr/local/bin`，导致无法找到 goaccess 命令
+- **✨ 解决方案**：使用完整路径 `/usr/local/bin/goaccess` 替代 `command -v goaccess`
+- **🛡️ 健壮性提升**：避免依赖用户的 PATH 环境变量，确保脚本在不同用户环境下都能正常工作
+- **📝 代码改进**：添加注释说明使用完整路径的原因
+
+#### 📄 修改的文件
+- [脚本/分析所有站点.sh](file:///home/www/GoAccess-Manage/脚本/分析所有站点.sh) - 使用完整路径调用 goaccess
+
+### 💡 技术细节
+
+#### 🔍 问题分析
+- **root 用户 PATH**：包含 `/usr/local/bin`，可以正常找到 goaccess
+- **www 用户 PATH**：`/sbin:/bin:/usr/sbin:/usr/bin`，不包含 `/usr/local/bin`
+- **GoAccess 安装位置**：`/usr/local/bin/goaccess`
+
+#### ✅ 解决方案
+1. 定义常量：`GOACCESS_BIN="/usr/local/bin/goaccess"`
+2. 使用文件检查：`if [ ! -x "$GOACCESS_BIN" ]`
+3. 使用完整路径执行：`"$GOACCESS_BIN" "${GOACCESS_ARGS[@]}"`
+
+</details>
+
+---
 ## [v3.9.10] - 2026-05-31 21:30 🔧 🛡️
 
 <details>

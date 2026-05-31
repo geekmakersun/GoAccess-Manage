@@ -332,7 +332,9 @@ if [ "$EUID" -eq 0 ]; then
 fi
 
 # 检查 GoAccess 命令是否存在
-if ! command -v goaccess &> /dev/null; then
+# 注意：使用完整路径，避免 www 用户的 PATH 不包含 /usr/local/bin
+GOACCESS_BIN="/usr/local/bin/goaccess"
+if [ ! -x "$GOACCESS_BIN" ]; then
     log_error "GoAccess 未安装"
     echo "请先运行：安装GoAccess.sh"
     exit 1
@@ -543,7 +545,7 @@ for CONFIG_FILE in "$CONFIG_DIR"/*.conf; do
     echo -e "  ${GREEN}执行分析...${NC}"
 
     goaccess_rc=0
-    goaccess "${GOACCESS_ARGS[@]}" 2> >(tee -a "$RUN_LOG" >&2) || goaccess_rc=$?
+    "$GOACCESS_BIN" "${GOACCESS_ARGS[@]}" 2> >(tee -a "$RUN_LOG" >&2) || goaccess_rc=$?
     
     if [ $goaccess_rc -eq 0 ]; then
         log_success "完成: $output_html"
